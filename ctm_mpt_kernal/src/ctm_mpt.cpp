@@ -10,6 +10,26 @@ ctm_mpt::CtmMpt::CtmMpt()
 	return;
 }
 
+ctm_mpt::CtmMpt::CtmMpt(const std::string& port_name)
+: mtr_serial_(port_name,
+			  115200,
+			  serial::Timeout::simpleTimeout(1000),
+			  serial::eightbits,
+			  serial::parity_none,
+			  serial::stopbits_one)
+{
+	if ( this->mtr_serial_.isOpen() )
+	{
+		ROS_INFO("The serial port of motors is opened.\n");
+	}
+	else
+	{
+		ROS_WARN("Cannot open the serial port of motors.\n");
+	}
+
+	return;
+}
+
 ctm_mpt::CtmMpt::CtmMpt(const std::string& snsr_port_1,
 			   			const std::string& snsr_port_2,
 			   			const std::string& mtr_port)
@@ -34,29 +54,29 @@ ctm_mpt::CtmMpt::CtmMpt(const std::string& snsr_port_1,
 {
 	if ( this->snsr_serial_1_.isOpen() )
 	{
-		ROS_INFO("The first serial port of sensors is opened.");
+		ROS_INFO("The first serial port of sensors is opened.\n");
 	}
 	else
 	{
-		ROS_WARN("Cannot open the first serial port of sensors.");
+		ROS_WARN("Cannot open the first serial port of sensors.\n");
 	}
 
 	if ( this->snsr_serial_2_.isOpen() )
 	{
-		ROS_INFO("The second serial port of sensors is opened.");
+		ROS_INFO("The second serial port of sensors is opened.\n");
 	}
 	else
 	{
-		ROS_WARN("Cannot open the second serial port of sensors.");
+		ROS_WARN("Cannot open the second serial port of sensors.\n");
 	}
 
 	if ( this->mtr_serial_.isOpen() )
 	{
-		ROS_INFO("The serial port of motors is opened.");
+		ROS_INFO("The serial port of motors is opened.\n");
 	}
 	else
 	{
-		ROS_WARN("Cannot open the serial port of motors.");
+		ROS_WARN("Cannot open the serial port of motors.\n");
 	}
 
 	return;
@@ -82,7 +102,6 @@ void ctm_mpt::CtmMpt::mtrInit(uint8_t id)
 
 	this->mtrWrite_(cmd_reso, 15);
 	this->mtrWrite_(cmd_rst_paras, 19);
-
 	this->mtrReset(id);
 
 	return;
@@ -101,7 +120,7 @@ void ctm_mpt::CtmMpt::mtrReset(uint8_t id)
 	this->mtrWrite_(cmd_rst, 6);
 
 	while (!this->mtrAtHome_(id));
-	ROS_INFO("Motor (id = %d) is now at home.", id);
+	ROS_INFO("Motor (id = %d) is now at home.\n", id);
 
 	return;
 }
@@ -138,7 +157,7 @@ void ctm_mpt::CtmMpt::mtrSetPos(uint8_t id,
 	this->mtrWrite_(cmd_pos_off, 6);
 
 	while (!this->mtrAtPos_(id));
-	ROS_INFO("Motor (id = %d) has arrived.", id);
+	ROS_INFO("Motor (id = %d) has arrived.\n", id);
 
 	return;
 }
@@ -190,7 +209,7 @@ void ctm_mpt::CtmMpt::snsrInit(void)
 void ctm_mpt::CtmMpt::snsrRead(void)
 {
 	std::string cmd_read("AT+GOD");
-	size_t i = 0, bytes_read = 0;
+	size_t bytes_read = 0;
 	uint8_t data_1[31] = {}, data_2[31] = {};
 
 	// Write command of reading data.
@@ -198,23 +217,13 @@ void ctm_mpt::CtmMpt::snsrRead(void)
 
 	// Collect data from the first sensors.
 	bytes_read = this->snsr_serial_1_.read(data_1, 31);
-	ROS_INFO("Bytes read from (the first) sensors: %d.", bytes_read);
-	std::cout << "Full response: ";
-	for (i = 0; i < bytes_read; i++)
-	{
-		printf("%02x ", data_1[i]);
-	}
-	std::cout << "." << std::endl;
+	printf("Bytes read from (the first) sensors: %d.\n", bytes_read);
+	utils::dispUint8Array(data_1, bytes_read, "Full response: ");
 
 	// Collect data from the second sensors.
 	bytes_read = this->snsr_serial_2_.read(data_2, 31);
-	ROS_INFO("Bytes read from (the second) sensors: %d.", bytes_read);
-	std::cout << "Full response: ";
-	for (i = 0; i < bytes_read; i++)
-	{
-		printf("%02x ", data_2[i]);
-	}
-	std::cout << "." << std::endl;
+	printf("Bytes read from (the second) sensors: %d.\n", bytes_read);
+	utils::dispUint8Array(data_2, bytes_read, "Full response: ");
 
 	this->snsrInfoAnalyse_(data_1);
 	this->snsrInfoAnalyse_(data_2);
@@ -225,7 +234,7 @@ void ctm_mpt::CtmMpt::snsrRead(void)
 void ctm_mpt::CtmMpt::mtrWrite_(const uint8_t* cmd, const size_t len)
 {
 	uint8_t* new_cmd = new uint8_t[len + 2]; // Create a new array.
-	size_t i = 0, bytes_wrote = 0, bytes_read = 0;
+	size_t bytes_wrote = 0, bytes_read = 0;
 	uint8_t rsp[64] = {};
 
 	// Add crc16 correct codes.
@@ -233,24 +242,16 @@ void ctm_mpt::CtmMpt::mtrWrite_(const uint8_t* cmd, const size_t len)
 
 	// Write to motors.
 	bytes_wrote = this->mtr_serial_.write(new_cmd, len + 2);
-	ROS_INFO("Bytes wrote to motors: %d.", bytes_wrote);
-	std::cout << "Full command: ";
-	for (i = 0; i < len + 2; i++)
+	// If the command is not to read the motor register.
+	if (new_cmd[1] != 0x03)
 	{
-		printf("%02x ", new_cmd[i]);
-	}
-	std::cout << "." << std::endl;
-
-	if (new_cmd[1] != 0x03) // If the command is not to read the motor register.
-	{
+		printf("Bytes wrote to motors: %d.\n", bytes_wrote);
+		utils::dispUint8Array(new_cmd, len + 2, "Full command: ");
+	
 		bytes_read = this->mtr_serial_.read(rsp, 8);
-		ROS_INFO("Bytes read from motors: %d.", bytes_read);
-		std::cout << "Full response: ";
-		for (i = 0; i < bytes_read; i++)
-		{
-			printf("%02x ", rsp[i]);
-		}
-		std::cout << "." << std::endl;
+
+		printf("Bytes read from motors: %d.\n", bytes_read);
+		utils::dispUint8Array(rsp, bytes_read, "Full response: ");
 	}
 	else
 	{
@@ -271,13 +272,13 @@ void ctm_mpt::CtmMpt::snsrWrite_(const std::string& cmd)
 
 	// Write the first serial port of sensors.
 	bytes_wrote = this->snsr_serial_1_.write(new_cmd);
-	ROS_INFO("Bytes wrote to (the first) sensors: %d.", bytes_wrote);
+	printf("Bytes wrote to (the first) sensors: %d.\n", bytes_wrote);
 	std::cout << "Full command: " << new_cmd;
 	// Get response.
 	if (cmd != "AT+GOD" && cmd != "AT+GSD" && cmd != "AT+GSD=STOP")
 	{
 		bytes_read = this->snsr_serial_1_.readline(rsp, 64, "\n");
-		ROS_INFO("Bytes read from (the first) sensors: %d.", bytes_read);
+		printf("Bytes read from (the first) sensors: %d.\n", bytes_read);
 		std::cout << "Full response: " << rsp;
 	}
 	else if (cmd == "AT+GOD")
@@ -295,13 +296,13 @@ void ctm_mpt::CtmMpt::snsrWrite_(const std::string& cmd)
 
 	// Write the second serial port of sensors.
 	bytes_wrote = this->snsr_serial_2_.write(new_cmd);
-	ROS_INFO("Bytes wrote to (the second) sensors: %d.", bytes_wrote);
+	printf("Bytes wrote to (the second) sensors: %d.\n", bytes_wrote);
 	std::cout << "Full command: " << new_cmd;
 	// Get response.
 	if (cmd != "AT+GOD" && cmd != "AT+GSD" && cmd != "AT+GSD=STOP")
 	{
 		bytes_read = this->snsr_serial_2_.readline(rsp, 64, "\n");
-		ROS_INFO("Bytes read from (the second) sensors: %d.", bytes_read);
+		printf("Bytes read from (the second) sensors: %d.\n", bytes_read);
 		std::cout << "Full response: " << rsp;
 	}
 	else if (cmd == "AT+GOD")
@@ -352,7 +353,7 @@ bool ctm_mpt::CtmMpt::mtrAtHome_(uint8_t id)
 
 	this->mtrWrite_(cmd_read, 6);
 	this->mtr_serial_.read(rsp, 7);
-	at_home = ( (*(rsp + 3) & BIT_AT_HOME) == BIT_AT_HOME );
+	at_home = ( (*(rsp + 4) & BIT_AT_HOME) == BIT_AT_HOME );
 
 	return at_home;
 }

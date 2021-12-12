@@ -14,6 +14,9 @@ namespace utils
     void loadUint8ArrayToFloat32(const uint8_t* src, float* dst);
 
     void addCRC16(const uint8_t* src, uint8_t* dst, const size_t size);
+
+    void dispUint8Array(const uint8_t* src, const size_t size,
+                        const std::string prefix);
 }
 
 #endif

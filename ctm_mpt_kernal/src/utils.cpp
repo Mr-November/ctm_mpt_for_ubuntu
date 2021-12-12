@@ -1,4 +1,5 @@
 #include <serial/serial.h>
+#include <iostream>
 #include "utils.h"
 
 void utils::loadInt32ToUint8Array(const int32_t* src, uint8_t* dst)
@@ -79,4 +80,17 @@ void utils::addCRC16(const uint8_t* src, uint8_t* dst, const size_t size)
 	*(dst + size + 1) = crc >> 8;
 
     return;
+}
+
+void utils::dispUint8Array(const uint8_t* src, const size_t size,
+						   const std::string prefix)
+{
+	size_t i = 0;
+
+	std::cout << prefix;
+	for (i = 0; i < size; i++)
+	{
+		printf("%02x ", src[i]);
+	}
+	std::cout << "." << std::endl << std::endl;
 }

@@ -10,6 +10,9 @@ namespace ctm_mpt
 	{
 	public:
 		CtmMpt();
+
+		CtmMpt(const std::string& port_name); // For debugging.
+
 		CtmMpt(const std::string& snsr_port_1,
 			   const std::string& snsr_port_2,
 			   const std::string& mtr_port);
