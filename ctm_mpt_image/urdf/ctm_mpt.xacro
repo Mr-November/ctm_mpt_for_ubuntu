@@ -1,0 +1,1010 @@
+<?xml version="1.0"?>
+<!-- Continuum Manipulator. -->
+<robot name="ctm_mpt" xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <!-- Constants. -->
+  <xacro:property name="PI" value="3.1415926535897931"/>
+  <xacro:property name="LOWER" value="${-PI/9}"/>
+  <xacro:property name="UPPER" value="${PI/9}"/>
+  <xacro:property name="EFFORT" value="100"/>
+  <xacro:property name="VELOCITY" value="1.0"/>
+
+  <!-- Fix the manipulator with the world. -->
+  <link name="Ref"/>
+
+  <joint name="fixed" type="fixed">
+    <parent link="Ref"/>
+    <child link="Base"/>
+  </joint>
+
+  <!-- Base link. -->
+  <link name="Base">
+    <inertial>
+      <origin
+        xyz="0.000108918610723041 -4.50265831677399E-05 0.227545564283789"
+        rpy="0 0 0"/>
+      <mass value="22.8560317140124"/>
+      <inertia
+        ixx="0.480282406720389"
+        ixy="-0.000395191565373515"
+        ixz="1.34367924962464E-07"
+        iyy="0.483816355264394"
+        iyz="2.30659171344151E-06"
+        izz="0.851807667022651"/>
+    </inertial>
+
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://ctm_mpt_image/meshes/Base.stl"/>
+      </geometry>
+      <material name="">
+        <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1"/>
+      </material>
+    </visual>
+
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://ctm_mpt_image/meshes/Base.stl"/>
+      </geometry>
+    </collision>
+  </link>
+  
+  <!-- Universal Joint 1. -->
+  <link name="UnvJnt1">
+    <inertial>
+      <origin
+        xyz="-5.50310685909494E-09 4.7482706655444E-09 4.12034117935889E-08"
+        rpy="0 0 0"/>
+      <mass value="0.0359288175022827"/>
+      <inertia
+        ixx="1.14333293602175E-05"
+        ixy="-2.96741037165006E-12"
+        ixz="-5.8191718854817E-13"
+        iyy="1.14333468808361E-05"
+        iyz="-5.65588186677988E-13"
+        izz="1.884674552353E-05"/>
+    </inertial>
+    
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://ctm_mpt_image/meshes/UnvJnt.stl"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 1 1 1"/>
+      </material>
+    </visual>
+
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://ctm_mpt_image/meshes/UnvJnt.stl"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <!-- Connect the base and the universal joint 1. -->
+  <joint name="BJ1" type="revolute">
+    <origin
+      xyz="0 0 0.452"
+      rpy="0 0 0"/>
+    <parent link="Base"/>
+    <child link="UnvJnt1"/>
+    <axis xyz="0 1 0"/>
+    <limit
+      lower="${LOWER}"
+      upper="${UPPER}"
+      effort="${EFFORT}"
+      velocity="${VELOCITY}"/>
+  </joint>
+
+  <!-- Segment 1. -->
+  <link name="Seg1">
+    <inertial>
+      <origin
+        xyz="-1.06841646063671E-06 2.01378593134294E-07 0.0640002951311767"
+        rpy="0 0 0"/>
+      <mass value="0.523546018318954"/>
+      <inertia
+        ixx="0.00092516517906616"
+        ixy="-2.6535780328987E-09"
+        ixz="2.13072695588025E-09"
+        iyy="0.00102761471402501"
+        iyz="9.71708180563393E-11"
+        izz="0.000802563777831854"/>
+    </inertial>
+
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://ctm_mpt_image/meshes/Seg.stl"/>
+      </geometry>
+      <material name="">
+        <color rgba="0.898039215686275 0.917647058823529 0.929411764705882 1"/>
+      </material>
+    </visual>
+
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://ctm_mpt_image/meshes/Seg.stl"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <!-- Connect the universal joint 1 and the segment 1. -->
+  <joint name="J1S1" type="revolute">
+    <origin
+      xyz="0 0 0"
+      rpy="0 0 0"/>
+    <parent link="UnvJnt1"/>
+    <child link="Seg1"/>
+    <axis xyz="1 0 0"/>
+    <limit
+      lower="${LOWER}"
+      upper="${UPPER}"
+      effort="${EFFORT}"
+      velocity="${VELOCITY}"/>
+  </joint>
+
+  <!-- Universal joint 2. -->
+  <link name="UnvJnt2">
+    <inertial>
+      <origin
+        xyz="4.74827110963361E-09 -5.50310730318415E-09 -4.12034121266558E-08"
+        rpy="0 0 0"/>
+      <mass value="0.035928817502283"/>
+      <inertia
+        ixx="1.1433346880836E-05"
+        ixy="-2.96741044534193E-12"
+        ixz="5.65588312178946E-13"
+        iyy="1.14333293602175E-05"
+        iyz="5.8191718551997E-13"
+        izz="1.884674552353E-05"/>
+    </inertial>
+
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://ctm_mpt_image/meshes/UnvJnt.stl"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 1 1 1"/>
+      </material>
+    </visual>
+
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://ctm_mpt_image/meshes/UnvJnt.stl"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <!-- Connect the segment 1 and the universal joint 2. -->
+  <joint name="S1J2" type="revolute">
+    <origin
+      xyz="0 0 0.128"
+      rpy="0 0 0"/>
+    <parent link="Seg1"/>
+    <child link="UnvJnt2"/>
+    <axis xyz="0 1 0"/>
+    <limit
+      lower="${LOWER}"
+      upper="${UPPER}"
+      effort="${EFFORT}"
+      velocity="${VELOCITY}"/>
+  </joint>
+
+  <!-- Segment 2. -->
+  <link name="Seg2">
+    <inertial>
+      <origin
+        xyz="1.86533836377123E-07 -1.0468209887815E-06 0.0639997244435651"
+        rpy="0 0 0"/>
+      <mass value="0.525659230606409"/>
+      <inertia
+        ixx="0.00102963209023682"
+        ixy="-2.85176256377808E-09"
+        ixz="-3.6049972161767E-10"
+        iyy="0.000925354127360842"
+        iyz="-2.2282456662145E-09"
+        izz="0.000805319316987674"/>
+    </inertial>
+
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://ctm_mpt_image/meshes/Seg.stl"/>
+      </geometry>
+      <material name="">
+        <color rgba="0.898039215686275 0.917647058823529 0.929411764705882 1"/>
+      </material>
+    </visual>
+
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://ctm_mpt_image/meshes/Seg.stl"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <!-- Connect the universal joint 2 and the segment 2. -->>
+  <joint name="J2S2" type="revolute">
+    <origin
+      xyz="0 0 0"
+      rpy="0 0 0"/>
+    <parent link="UnvJnt2"/>
+    <child link="Seg2"/>
+    <axis xyz="1 0 0"/>
+    <limit
+      lower="${LOWER}"
+      upper="${UPPER}"
+      effort="${EFFORT}"
+      velocity="${VELOCITY}"/>
+  </joint>
+
+  <!-- Universal joint 3. -->
+  <link name="UnvJnt3">
+    <inertial>
+      <origin
+        xyz="-5.50310641500573E-09 4.74827044349979E-09 4.12034119046112E-08"
+        rpy="0 0 0"/>
+      <mass value="0.0359288175022827"/>
+      <inertia
+        ixx="1.14333293602177E-05"
+        ixy="-2.96741050336368E-12"
+        ixz="-5.81917178823738E-13"
+        iyy="1.14333468808361E-05"
+        iyz="-5.65588129350357E-13"
+        izz="1.88467455235302E-05"/>
+    </inertial>
+
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://ctm_mpt_image/meshes/UnvJnt.stl"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 1 1 1"/>
+      </material>
+    </visual>
+
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://ctm_mpt_image/meshes/UnvJnt.stl"/>
+      </geometry>
+    </collision>
+  </link>
+  
+  <!-- Connect the segment 2 and the universal joint 3. -->
+  <joint name="S2J3" type="revolute">
+    <origin
+      xyz="0 0 0.128"
+      rpy="0 0 0"/>
+    <parent link="Seg2"/>
+    <child link="UnvJnt3"/>
+    <axis xyz="0 1 0"/>
+    <limit
+      lower="${LOWER}"
+      upper="${UPPER}"
+      effort="${EFFORT}"
+      velocity="${VELOCITY}"/>
+  </joint>
+
+  <!-- Segment 3. -->
+  <link name="Seg3">
+    <inertial>
+      <origin
+        xyz="-1.06841645974853E-06 2.0137859535474E-07 0.0640002951311767"
+        rpy="0 0 0"/>
+      <mass value="0.52354601831892"/>
+      <inertia
+        ixx="0.000925165179066122"
+        ixy="-2.6535780269627E-09"
+        ixz="2.13072695907817E-09"
+        iyy="0.00102761471402497"
+        iyz="9.7170818769921E-11"
+        izz="0.000802563777831819"/>
+    </inertial>
+
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://ctm_mpt_image/meshes/Seg.stl"/>
+      </geometry>
+      <material name="">
+        <color rgba="0.898039215686275 0.917647058823529 0.929411764705882 1"/>
+      </material>
+    </visual>
+
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://ctm_mpt_image/meshes/Seg.stl"/>
+      </geometry>
+    </collision>
+  </link>
+  
+  <!-- Connect the universal joint 3 and the segment 3. -->
+  <joint name="J3S3" type="revolute">
+    <origin
+      xyz="0 0 0"
+      rpy="0 0 0"/>
+    <parent link="UnvJnt3"/>
+    <child link="Seg3"/>
+    <axis xyz="1 0 0"/>
+    <limit
+      lower="${LOWER}"
+      upper="${UPPER}"
+      effort="${EFFORT}"
+      velocity="${VELOCITY}"/>
+  </joint>
+
+  <!-- Universal joint 4. -->
+  <link name="UnvJnt4">
+    <inertial>
+      <origin
+        xyz="4.7482706655444E-09 -5.50310708113955E-09 -4.12034120156335E-08"
+        rpy="0 0 0"/>
+      <mass value="0.0359288175022821"/>
+      <inertia
+        ixx="1.1433346880836E-05"
+        ixy="-2.96741031151072E-12"
+        ixz="5.65588299357904E-13"
+        iyy="1.14333293602173E-05"
+        iyz="5.8191721766683E-13"
+        izz="1.88467455235299E-05"/>
+    </inertial>
+
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://ctm_mpt_image/meshes/UnvJnt.stl"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 1 1 1"/>
+      </material>
+    </visual>
+
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://ctm_mpt_image/meshes/UnvJnt.stl"/>
+      </geometry>
+    </collision>
+  </link>
+  
+  <!-- Connect the segment 3 and the universal joint 4. -->
+  <joint name="S3J4" type="revolute">
+    <origin
+      xyz="0 0 0.128"
+      rpy="0 0 0"/>
+    <parent link="Seg3"/>
+    <child link="UnvJnt4"/>
+    <axis xyz="0 1 0"/>
+    <limit
+      lower="${LOWER}"
+      upper="${UPPER}"
+      effort="${EFFORT}"
+      velocity="${VELOCITY}"/>
+  </joint>
+
+  <!-- Segment 4. -->
+  <link name="Seg4">
+    <inertial>
+      <origin
+        xyz="1.86533835044855E-07 -1.04682098811537E-06 0.0639997244435642"
+        rpy="0 0 0"/>
+      <mass value="0.525659230606464"/>
+      <inertia
+        ixx="0.00102963209023689"
+        ixy="-2.85176257930927E-09"
+        ixz="-3.60499722143027E-10"
+        iyy="0.000925354127360893"
+        iyz="-2.22824568000097E-09"
+        izz="0.000805319316987729"/>
+    </inertial>
+
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://ctm_mpt_image/meshes/Seg.stl"/>
+      </geometry>
+      <material name="">
+        <color rgba="0.898039215686275 0.917647058823529 0.929411764705882 1"/>
+      </material>
+    </visual>
+
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://ctm_mpt_image/meshes/Seg.stl"/>
+      </geometry>
+    </collision>
+  </link>
+  
+  <!-- Connect the universal joint 4 and the segment 4. -->
+  <joint name="J4S4" type="revolute">
+    <origin
+      xyz="0 0 0"
+      rpy="0 0 0"/>
+    <parent link="UnvJnt4"/>
+    <child link="Seg4"/>
+    <axis xyz="1 0 0"/>
+    <limit
+      lower="${LOWER}"
+      upper="${UPPER}"
+      effort="${EFFORT}"
+      velocity="${VELOCITY}"/>
+  </joint>
+
+  <!-- Universal joint 5. -->
+  <link name="UnvJnt5">
+    <inertial>
+      <origin
+        xyz="-5.50310685909494E-09 4.74827110963361E-09 4.12034116825666E-08"
+        rpy="0 0 0"/>
+      <mass value="0.0359288175022814"/>
+      <inertia
+        ixx="1.14333293602172E-05"
+        ixy="-2.96741042628368E-12"
+        ixz="-5.81917140445253E-13"
+        iyy="1.14333468808359E-05"
+        iyz="-5.65588167042116E-13"
+        izz="1.88467455235299E-05"/>
+    </inertial>
+
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://ctm_mpt_image/meshes/UnvJnt.stl"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 1 1 1"/>
+      </material>
+    </visual>
+
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://ctm_mpt_image/meshes/UnvJnt.stl"/>
+      </geometry>
+    </collision>
+  </link>
+  
+  <!-- Connect the segment 4 and the universal joint 5. -->
+  <joint name="S4J5" type="revolute">
+    <origin
+      xyz="0 0 0.128"
+      rpy="0 0 0"/>
+    <parent link="Seg4"/>
+    <child link="UnvJnt5"/>
+    <axis xyz="0 1 0"/>
+    <limit
+      lower="${LOWER}"
+      upper="${UPPER}"
+      effort="${EFFORT}"
+      velocity="${VELOCITY}"/>
+  </joint>
+
+  <!-- Segment 5. -->
+  <link name="Seg5">
+    <inertial>
+      <origin
+        xyz="-1.06841646063671E-06 2.01378593356338E-07 0.0640002951311769"
+        rpy="0 0 0"/>
+      <mass value="0.52354601831896"/>
+      <inertia
+        ixx="0.000925165179066163"
+        ixy="-2.65357803655788E-09"
+        ixz="2.13072695044571E-09"
+        iyy="0.00102761471402502"
+        iyz="9.7170815199547E-11"
+        izz="0.000802563777831858"/>
+    </inertial>
+
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://ctm_mpt_image/meshes/Seg.stl"/>
+      </geometry>
+      <material name="">
+        <color rgba="0.898039215686275 0.917647058823529 0.929411764705882 1"/>
+      </material>
+    </visual>
+
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://ctm_mpt_image/meshes/Seg.stl"/>
+      </geometry>
+    </collision>
+  </link>
+  
+  <!-- Connect the universal joint 5 and the segment 5. -->
+  <joint name="J5S5" type="revolute">
+    <origin
+      xyz="0 0 0"
+      rpy="0 0 0"/>
+    <parent link="UnvJnt5"/>
+    <child link="Seg5"/>
+    <axis xyz="1 0 0"/>
+    <limit
+      lower="${LOWER}"
+      upper="${UPPER}"
+      effort="${EFFORT}"
+      velocity="${VELOCITY}"/>
+  </joint>
+
+  <!-- Universal joint 6. -->
+  <link name="UnvJnt6">
+    <inertial>
+      <origin
+        xyz="4.74827022145519E-09 -5.50310730318415E-09 -4.12034119046112E-08"
+        rpy="0 0 0"/>
+      <mass value="0.0359288175022803"/>
+      <inertia
+        ixx="1.14333468808355E-05"
+        ixy="-2.96741032336918E-12"
+        ixz="5.65588317682477E-13"
+        iyy="1.14333293602171E-05"
+        iyz="5.81917176825449E-13"
+        izz="1.88467455235294E-05"/>
+    </inertial>
+
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://ctm_mpt_image/meshes/UnvJnt.stl"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 1 1 1"/>
+      </material>
+    </visual>
+
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://ctm_mpt_image/meshes/UnvJnt.stl"/>
+      </geometry>
+    </collision>
+  </link>
+  
+  <!-- Connect the segment 5 and the universal joint 6. -->
+  <joint name="S5J6" type="revolute">
+    <origin
+      xyz="0 0 0.128"
+      rpy="0 0 0"/>
+    <parent link="Seg5"/>
+    <child link="UnvJnt6"/>
+    <axis xyz="0 1 0"/>
+    <limit
+      lower="${LOWER}"
+      upper="${UPPER}"
+      effort="${EFFORT}"
+      velocity="${VELOCITY}"/>
+  </joint>
+
+  <!-- Segment 6. -->
+  <link name="Seg6">
+    <inertial>
+      <origin
+        xyz="1.86533836377123E-07 -1.04682098855946E-06 0.0639997244435645"
+        rpy="0 0 0"/>
+      <mass value="0.525659230606459"/>
+      <inertia
+        ixx="0.00102963209023687"
+        ixy="-2.85176258527238E-09"
+        ixz="-3.60499725148217E-10"
+        iyy="0.00092535412736089"
+        iyz="-2.22824568035555E-09"
+        izz="0.000805319316987724"/>
+    </inertial>
+
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://ctm_mpt_image/meshes/Seg.stl"/>
+      </geometry>
+      <material name="">
+        <color rgba="0.898039215686275 0.917647058823529 0.929411764705882 1"/>
+      </material>
+    </visual>
+
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://ctm_mpt_image/meshes/Seg.stl"/>
+      </geometry>
+    </collision>
+  </link>
+  
+  <!-- Connect the universal joint 6 and the segment 6. -->
+  <joint name="J6S6" type="revolute">
+    <origin
+      xyz="0 0 0"
+      rpy="0 0 0"/>
+    <parent link="UnvJnt6"/>
+    <child link="Seg6"/>
+    <axis xyz="1 0 0"/>
+    <limit
+      lower="${LOWER}"
+      upper="${UPPER}"
+      effort="${EFFORT}"
+      velocity="${VELOCITY}"/>
+  </joint>
+
+  <!-- Universal joint 7. -->
+  <link name="UnvJnt7">
+    <inertial>
+      <origin
+        xyz="-5.50310641500573E-09 4.748270887589E-09 4.12034120156335E-08"
+        rpy="0 0 0"/>
+      <mass value="0.0359288175022811"/>
+      <inertia
+        ixx="1.14333293602173E-05"
+        ixy="-2.96741034200391E-12"
+        ixz="-5.81917158981411E-13"
+        iyy="1.14333468808357E-05"
+        iyz="-5.65588232282491E-13"
+        izz="1.88467455235297E-05"/>
+    </inertial>
+
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://ctm_mpt_image/meshes/UnvJnt.stl"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 1 1 1"/>
+      </material>
+    </visual>
+
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://ctm_mpt_image/meshes/UnvJnt.stl"/>
+      </geometry>
+    </collision>
+  </link>
+  
+  <!-- Connect the segment 6 and the universal joint 7. -->
+  <joint name="S6J7" type="revolute">
+    <origin
+      xyz="0 0 0.128"
+      rpy="0 0 0"/>
+    <parent link="Seg6"/>
+    <child link="UnvJnt7"/>
+    <axis xyz="0 1 0"/>
+    <limit
+      lower="${LOWER}"
+      upper="${UPPER}"
+      effort="${EFFORT}"
+      velocity="${VELOCITY}"/>
+  </joint>
+
+  <!-- Segment 7. -->
+  <link name="Seg7">
+    <inertial>
+      <origin
+        xyz="-1.06841645930444E-06 2.01378594022472E-07 0.0640002951311778"
+        rpy="0 0 0"/>
+      <mass value="0.523546018318938"/>
+      <inertia
+        ixx="0.000925165179066127"
+        ixy="-2.65357801444016E-09"
+        ixz="2.13072696153059E-09"
+        iyy="0.00102761471402499"
+        iyz="9.71708036831529E-11"
+        izz="0.000802563777831832"/>
+    </inertial>
+
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://ctm_mpt_image/meshes/Seg.stl"/>
+      </geometry>
+      <material name="">
+        <color rgba="0.898039215686275 0.917647058823529 0.929411764705882 1"/>
+      </material>
+    </visual>
+
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://ctm_mpt_image/meshes/Seg.stl"/>
+      </geometry>
+    </collision>
+  </link>
+  
+  <!-- Connect the universal joint 7 and the segment 7. -->
+  <joint name="J7S7" type="revolute">
+    <origin
+      xyz="0 0 0"
+      rpy="0 0 0"/>
+    <parent link="UnvJnt7"/>
+    <child link="Seg7"/>
+    <axis xyz="1 0 0"/>
+    <limit
+      lower="${LOWER}"
+      upper="${UPPER}"
+      effort="${EFFORT}"
+      velocity="${VELOCITY}"/>
+  </joint>
+
+  <!-- Universal joint 8. -->
+  <link name="UnvJnt8">
+    <inertial>
+      <origin
+        xyz="4.74827022145519E-09 -5.50310663705034E-09 -4.12034120156335E-08"
+        rpy="0 0 0"/>
+      <mass value="0.0359288175022833"/>
+      <inertia
+        ixx="1.14333468808362E-05"
+        ixy="-2.96741038393204E-12"
+        ixz="5.65588179844046E-13"
+        iyy="1.14333293602176E-05"
+        iyz="5.81917221588996E-13"
+        izz="1.88467455235302E-05"/>
+    </inertial>
+
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://ctm_mpt_image/meshes/UnvJnt.stl"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 1 1 1"/>
+      </material>
+    </visual>
+
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://ctm_mpt_image/meshes/UnvJnt.stl"/>
+      </geometry>
+    </collision>
+  </link>
+  
+  <!-- Connect the segment 7 and the universal joint 8. -->
+  <joint name="S7J8" type="revolute">
+    <origin
+      xyz="0 0 0.128"
+      rpy="0 0 0"/>
+    <parent link="Seg7"/>
+    <child link="UnvJnt8"/>
+    <axis xyz="0 1 0"/>
+    <limit
+      lower="${LOWER}"
+      upper="${UPPER}"
+      effort="${EFFORT}"
+      velocity="${VELOCITY}"/>
+  </joint>
+
+  <!-- Segment 8. -->
+  <link name="Seg8">
+    <inertial>
+      <origin
+        xyz="1.86533834600766E-07 -1.04682098811537E-06 0.0639997244435644"
+        rpy="0 0 0"/>
+      <mass value="0.525659230606457"/>
+      <inertia
+        ixx="0.00102963209023687"
+        ixy="-2.85176257190959E-09"
+        ixz="-3.60499713392444E-10"
+        iyy="0.000925354127360898"
+        iyz="-2.22824566501838E-09"
+        izz="0.000805319316987723"/>
+    </inertial>
+
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://ctm_mpt_image/meshes/Seg.stl"/>
+      </geometry>
+      <material name="">
+        <color rgba="0.898039215686275 0.917647058823529 0.929411764705882 1"/>
+      </material>
+    </visual>
+
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://ctm_mpt_image/meshes/Seg.stl"/>
+      </geometry>
+    </collision>
+  </link>
+  
+  <!-- Connect the universal joint 8 and the segment 8. -->
+  <joint name="J8S8" type="revolute">
+    <origin
+      xyz="0 0 0"
+      rpy="0 0 0"/>
+    <parent link="UnvJnt8"/>
+    <child link="Seg8"/>
+    <axis xyz="1 0 0"/>
+    <limit
+      lower="${LOWER}"
+      upper="${UPPER}"
+      effort="${EFFORT}"
+      velocity="${VELOCITY}"/>
+  </joint>
+
+  <!-- Universal joint 9. -->
+  <link name="UnvJnt9">
+    <inertial>
+      <origin
+        xyz="-5.50310685909494E-09 4.74827133167821E-09 4.12034120156335E-08"
+        rpy="0 0 0"/>
+      <mass value="0.0359288175022822"/>
+      <inertia
+        ixx="1.14333293602173E-05"
+        ixy="-2.96741046694127E-12"
+        ixz="-5.81917133166578E-13"
+        iyy="1.14333468808359E-05"
+        iyz="-5.65588205058457E-13"
+        izz="1.88467455235299E-05"/>
+    </inertial>
+
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://ctm_mpt_image/meshes/UnvJnt.stl"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 1 1 1"/>
+      </material>
+    </visual>
+
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://ctm_mpt_image/meshes/UnvJnt.stl"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <!-- Connect the segment 8 and the universal joint 9. -->
+  <joint name="S8J9" type="revolute">
+    <origin
+      xyz="0 0 0.128"
+      rpy="0 0 0"/>
+    <parent link="Seg8"/>
+    <child link="UnvJnt9"/>
+    <axis xyz="0 1 0"/>
+    <limit
+      lower="${LOWER}"
+      upper="${UPPER}"
+      effort="${EFFORT}"
+      velocity="${VELOCITY}"/>
+  </joint>
+
+  <!-- Segment 9, also the head segment. -->
+  <link name="Seg9_Head">
+    <inertial>
+      <origin
+        xyz="5.78568388753808E-07 5.03623603487213E-07 0.0608602283267965"
+        rpy="0 0 0"/>
+      <mass value="0.497271341157921"/>
+      <inertia
+        ixx="0.00089124527277552"
+        ixy="-1.54419534730238E-09"
+        ixz="-1.30176586244889E-08"
+        iyy="0.000934969477700439"
+        iyz="1.62415264433302E-09"
+        izz="0.000719370850011746"/>
+    </inertial>
+    
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://ctm_mpt_image/meshes/SegHead.stl"/>
+      </geometry>
+      <material name="">
+        <color rgba="0.898039215686275 0.917647058823529 0.929411764705882 1"/>
+      </material>
+    </visual>
+
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://ctm_mpt_image/meshes/Seg.stl"/>
+      </geometry>
+    </collision>
+  </link>
+  
+  <!-- Connect the universal joint 9 and the segment 9. -->
+  <joint name="J9S9" type="revolute">
+    <origin
+      xyz="0 0 0"
+      rpy="0 0 0"/>
+    <parent link="UnvJnt9"/>
+    <child link="Seg9_Head"/>
+    <axis xyz="1 0 0"/>
+    <limit
+      lower="${LOWER}"
+      upper="${UPPER}"
+      effort="${EFFORT}"
+      velocity="${VELOCITY}"/>
+  </joint>
+</robot>
