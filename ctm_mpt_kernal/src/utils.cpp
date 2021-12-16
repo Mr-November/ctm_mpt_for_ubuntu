@@ -9,7 +9,7 @@ void utils::loadInt32ToUint8Array(const int32_t* src, uint8_t* dst)
 
     for (i = 0; i < size; i++)
 	{
-		*(dst + i) = *((uint8_t*)src + 3 - i);
+		*(dst + i) = *((const uint8_t*)src + 3 - i);
 	}
 
     return;
@@ -22,7 +22,7 @@ void utils::loadUint32ToUint8Array(const uint32_t* src, uint8_t* dst)
 
     for (i = 0; i < size; i++)
 	{
-		*(dst + i) = *((uint8_t*)src + 3 - i);
+		*(dst + i) = *((const uint8_t*)src + 3 - i);
 	}
 
     return;
@@ -34,6 +34,19 @@ void utils::loadUint8ArrayToUint16(const uint8_t* src, uint16_t* dst)
     *((uint8_t*)dst + 1) = *src;
 
     return;
+}
+
+void utils::loadUint8ArrayToInt32(const uint8_t* src, int32_t* dst)
+{
+	const size_t size = 4;
+    size_t i = 0;
+
+    for (i = 0; i < size; i++)
+	{
+		*((uint8_t*)dst + i) = *(src + 3 - i);
+	}
+
+	return;
 }
 
 void utils::loadUint8ArrayToFloat32(const uint8_t* src, float* dst)

@@ -156,7 +156,7 @@ void ctm_mpt::CtmMpt::mtrReset(uint8_t id)
 	this->mtrWrite_(cmd_rst, 6);
 
 	while (!this->mtrAtHome_(id));
-	ROS_INFO("Motor (id = %d) is now at home.\n", id);
+	ROS_INFO("Motor (id = %d) is home.\n", id);
 
 	return;
 }
@@ -198,6 +198,31 @@ void ctm_mpt::CtmMpt::mtrSetPos(uint8_t id,
 	return;
 }
 
+void ctm_mpt::CtmMpt::mtrGetPos(uint8_t id)
+{
+	uint8_t cmd_read_pos[] = { 0x00, 0x03, 0x00, 0xc6, 0x00, 0x02 };
+	size_t bytes_read = 0;
+	uint8_t rsp[9] = {};
+	int32_t pos = 0;
+
+	cmd_read_pos[0] = id;
+	this->mtrWrite_(cmd_read_pos, 6);
+
+	bytes_read = this->mtr_serial_.read(rsp, 9);
+	printf("Bytes read from motors: %d.\n", bytes_read);
+	utils::dispUint8Array(rsp, bytes_read, "Full response: ");
+
+	utils::loadUint8ArrayToInt32(rsp + 3, &pos);
+	ROS_INFO("Motor (id = %d) in %d (step).\n", id, pos);
+
+	return;
+}
+
+void ctm_mpt::CtmMpt::mtrGetPos(uint8_t* id)
+{
+	return;
+}
+
 void ctm_mpt::CtmMpt::mtrSetVel(uint8_t id,
 								int32_t vel, float dur,
 								uint32_t k_i, uint32_t k_f)
@@ -223,9 +248,34 @@ void ctm_mpt::CtmMpt::mtrSetVel(uint8_t id,
 	this->mtrWrite_(cmd_vel_on, 6);
 
 	ros::Duration(dur).sleep(); // sleep for a certain amount of time.
-	
 	this->mtrWrite_(cmd_vel_off, 6);
 
+	return;
+}
+
+void ctm_mpt::CtmMpt::mtrGetVel(uint8_t id)
+{
+	uint8_t cmd_read_vel[] = { 0x00, 0x03, 0x00, 0xc8, 0x00, 0x04 };
+	size_t bytes_read = 0;
+	uint8_t rsp[13] = {};
+	int32_t vel_in_rpm = 0, vel_in_hz = 0;
+
+	cmd_read_vel[0] = id;
+	this->mtrWrite_(cmd_read_vel, 6);
+
+	bytes_read = this->mtr_serial_.read(rsp, 13);
+	printf("Bytes read from motors: %d.\n", bytes_read);
+	utils::dispUint8Array(rsp, bytes_read, "Full response: ");
+
+	utils::loadUint8ArrayToInt32(rsp + 3, &vel_in_rpm);
+	utils::loadUint8ArrayToInt32(rsp + 7, &vel_in_hz);
+	ROS_INFO("Motor (id = %d) at %d (rpm), or %d (Hz).\n", id, vel_in_rpm, vel_in_hz);
+
+	return;
+}
+
+void ctm_mpt::CtmMpt::mtrGetVel(uint8_t* id)
+{
 	return;
 }
 
@@ -290,7 +340,8 @@ void ctm_mpt::CtmMpt::mtrWrite_(const uint8_t* cmd, const size_t len)
 	}
 	else
 	{
-		;
+		//printf("Bytes wrote to motors: %d.\n", bytes_wrote);
+		//utils::dispUint8Array(new_cmd, len + 2, "Full command: ");
 	}
 
 	// Delete the new array.

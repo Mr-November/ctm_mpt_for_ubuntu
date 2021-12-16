@@ -13,18 +13,21 @@ int main(int argc, char** argv)
     // cd /dev
     // ls -al ttyUSB*
     // sudo chmod a+rw ttyUSB*
+    // 
     // ctm_mpt::CtmMpt m;
     // ctm_mpt::CtmMpt m("/dev/ttyUSB0");
-    ctm_mpt::CtmMpt m("/dev/ttyUSB0", "/dev/ttyUSB1");
-    // ctm_mpt::CtmMpt m("/dev/ttyUSB0", "/dev/ttyUSB0", "/dev/ttyUSB0");
+    // ctm_mpt::CtmMpt m("/dev/ttyUSB0", "/dev/ttyUSB1");
+    ctm_mpt::CtmMpt m("/dev/ttyUSB0", "/dev/ttyUSB1", "/dev/ttyUSB2");
 
     int i = 0, j = 3;
 
-    // // For single motor debugging.
-    // m.mtrInit(j);
-    // m.mtrSetPos(j, 100000, 20000, 5000, 5000);
-    // m.mtrReset(j);
-    // m.mtrSetVel(j, -20000, 3, 5000, 5000);
+    // For single motor debugging.
+    m.mtrInit(j);
+    m.mtrSetPos(j, 10000, 20000, 5000, 5000);
+    m.mtrReset(j);
+    m.mtrSetVel(j, -10000, 2.0, 6000, 6000);
+    m.mtrGetPos(j);
+    m.mtrGetVel(j);
 
     // // For multiple motors debugging.
     // for (i = 1; i < 10; i++)
@@ -62,7 +65,6 @@ int main(int argc, char** argv)
     // For sensors debugging.
     m.snsrInit();
     m.snsrRead();
-
 
     return 0;
 }

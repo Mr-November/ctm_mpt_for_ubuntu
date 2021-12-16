@@ -39,6 +39,7 @@ namespace ctm_mpt
 					   int32_t* pos, int32_t* vel,
 					   uint32_t* k_i, uint32_t* k_f);
 
+		// Get command position.
 		void mtrGetPos(uint8_t id);
 
 		void mtrGetPos(uint8_t* id);
@@ -50,6 +51,11 @@ namespace ctm_mpt
 		void mtrSetVel(uint8_t* id,
 					   int32_t* vel, float* dur,
 					   uint32_t* k_i, uint32_t* k_f);
+
+		// Get command velocity in rpm.
+		void mtrGetVel(uint8_t id);
+
+		void mtrGetVel(uint8_t* id);
 
 		void snsrInit(void);
 

@@ -11,6 +11,8 @@ namespace utils
 
     void loadUint8ArrayToUint16(const uint8_t* src, uint16_t* dst);
 
+    void loadUint8ArrayToInt32(const uint8_t* src, int32_t* dst);
+
     void loadUint8ArrayToFloat32(const uint8_t* src, float* dst);
 
     void addCRC16(const uint8_t* src, uint8_t* dst, const size_t size);
