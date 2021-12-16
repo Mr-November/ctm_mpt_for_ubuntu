@@ -9,9 +9,12 @@ namespace ctm_mpt
 	class CtmMpt
 	{
 	public:
-		CtmMpt();
+		CtmMpt(); // For debugging.
 
 		CtmMpt(const std::string& port_name); // For debugging.
+
+		CtmMpt(const std::string& snsr_port_1,
+			   const std::string& snsr_port_2); // For debugging.
 
 		CtmMpt(const std::string& snsr_port_1,
 			   const std::string& snsr_port_2,
@@ -71,8 +74,8 @@ namespace ctm_mpt
 		bool mtrAtHome_(uint8_t id);
 
 		bool mtrAtHome_(uint8_t* id);
-
-		void snsrInfoAnalyse_(const uint8_t* data);
+		
+		void snsrInfoAnalyse_(const uint8_t* data, const std::string prefix);
 	};
 }
 

@@ -31,6 +31,42 @@ ctm_mpt::CtmMpt::CtmMpt(const std::string& port_name)
 }
 
 ctm_mpt::CtmMpt::CtmMpt(const std::string& snsr_port_1,
+			   			const std::string& snsr_port_2)
+: snsr_serial_1_(snsr_port_1,
+				 115200,
+				 serial::Timeout::simpleTimeout(1000),
+				 serial::eightbits,
+				 serial::parity_none,
+				 serial::stopbits_one),
+  snsr_serial_2_(snsr_port_2,
+				 115200,
+				 serial::Timeout::simpleTimeout(1000),
+				 serial::eightbits,
+				 serial::parity_none,
+				 serial::stopbits_one)
+{
+	if ( this->snsr_serial_1_.isOpen() )
+	{
+		ROS_INFO("The first serial port of sensors is opened.\n");
+	}
+	else
+	{
+		ROS_WARN("Cannot open the first serial port of sensors.\n");
+	}
+
+	if ( this->snsr_serial_2_.isOpen() )
+	{
+		ROS_INFO("The second serial port of sensors is opened.\n");
+	}
+	else
+	{
+		ROS_WARN("Cannot open the second serial port of sensors.\n");
+	}
+
+	return;
+}
+
+ctm_mpt::CtmMpt::CtmMpt(const std::string& snsr_port_1,
 			   			const std::string& snsr_port_2,
 			   			const std::string& mtr_port)
 : snsr_serial_1_(snsr_port_1,
@@ -215,18 +251,17 @@ void ctm_mpt::CtmMpt::snsrRead(void)
 	// Write command of reading data.
 	this->snsrWrite_(cmd_read);
 
-	// Collect data from the first sensors.
+	// Collect and parse data from the first sensors.
 	bytes_read = this->snsr_serial_1_.read(data_1, 31);
 	printf("Bytes read from (the first) sensors: %d.\n", bytes_read);
 	utils::dispUint8Array(data_1, bytes_read, "Full response: ");
+	this->snsrInfoAnalyse_(data_1, "Group 1");
 
-	// Collect data from the second sensors.
+	// Collect and parse data from the second sensors.
 	bytes_read = this->snsr_serial_2_.read(data_2, 31);
 	printf("Bytes read from (the second) sensors: %d.\n", bytes_read);
 	utils::dispUint8Array(data_2, bytes_read, "Full response: ");
-
-	this->snsrInfoAnalyse_(data_1);
-	this->snsrInfoAnalyse_(data_2);
+	this->snsrInfoAnalyse_(data_2, "Group 2");
 
 	return;
 }
@@ -267,55 +302,52 @@ void ctm_mpt::CtmMpt::mtrWrite_(const uint8_t* cmd, const size_t len)
 void ctm_mpt::CtmMpt::snsrWrite_(const std::string& cmd)
 {
 	std::string new_cmd(cmd + "\r\n");
-	size_t bytes_wrote = 0, bytes_read = 0;
-	std::string rsp;
+	size_t k = 0, bytes_wrote = 0, bytes_read = 0;
+	std::string rsp_1, rsp_2;
 
-	// Write the first serial port of sensors.
+	// Write to sensors.
 	bytes_wrote = this->snsr_serial_1_.write(new_cmd);
-	printf("Bytes wrote to (the first) sensors: %d.\n", bytes_wrote);
-	std::cout << "Full command: " << new_cmd;
-	// Get response.
-	if (cmd != "AT+GOD" && cmd != "AT+GSD" && cmd != "AT+GSD=STOP")
-	{
-		bytes_read = this->snsr_serial_1_.readline(rsp, 64, "\n");
-		printf("Bytes read from (the first) sensors: %d.\n", bytes_read);
-		std::cout << "Full response: " << rsp;
-	}
-	else if (cmd == "AT+GOD")
-	{
-		;
-	}
-	else if (cmd == "AT+GSD")
-	{
-		ROS_WARN("Caution! Overflow!");
-	}
-	else // In this case, cmd == "AT+GSD=STOP".
-	{
-		ROS_WARN("Caution! Overflow!");
-	}
-
-	// Write the second serial port of sensors.
 	bytes_wrote = this->snsr_serial_2_.write(new_cmd);
-	printf("Bytes wrote to (the second) sensors: %d.\n", bytes_wrote);
-	std::cout << "Full command: " << new_cmd;
-	// Get response.
-	if (cmd != "AT+GOD" && cmd != "AT+GSD" && cmd != "AT+GSD=STOP")
+
+	ros::Duration(0.01).sleep(); // sleep for a certain amount of time.
+	
+	for (k = 1; k <= 2; k++)
 	{
-		bytes_read = this->snsr_serial_2_.readline(rsp, 64, "\n");
-		printf("Bytes read from (the second) sensors: %d.\n", bytes_read);
-		std::cout << "Full response: " << rsp;
-	}
-	else if (cmd == "AT+GOD")
-	{
-		;
-	}
-	else if (cmd == "AT+GSD")
-	{
-		ROS_WARN("Caution! Overflow!");
-	}
-	else // In this case, cmd == "AT+GSD=STOP".
-	{
-		ROS_WARN("Caution! Overflow!");
+		// Display what had been written to sensor group k.
+		printf("Bytes wrote to sensor group %d: %d.\n", k, bytes_wrote);
+		std::cout << "Full command: " << new_cmd << std::endl;
+		// Get response from group k.
+		if (cmd != "AT+GOD" && cmd != "AT+GSD" && cmd != "AT+GSD=STOP")
+		{
+			if (k == 1)
+			{
+				bytes_read = this->snsr_serial_1_.readline(rsp_1, 64, "\r\n");
+				printf("Bytes read from sensor group 1: %d.\n", bytes_read);
+				std::cout << "Full response: " << rsp_1 << std::endl;
+			}
+			else if (k == 2)
+			{
+				bytes_read = this->snsr_serial_2_.readline(rsp_2, 64, "\r\n");
+				printf("Bytes read from sensor group 2: %d.\n", bytes_read);
+				std::cout << "Full response: " << rsp_2 << std::endl;
+			}
+			else
+			{
+				ROS_WARN("What's the matter?\n");
+			}
+		}
+		else if (cmd == "AT+GOD")
+		{
+			;
+		}
+		else if (cmd == "AT+GSD")
+		{
+			ROS_WARN("Caution! Overflow!\n");
+		}
+		else // In this case, cmd == "AT+GSD=STOP".
+		{
+			ROS_WARN("Caution! Overflow!\n");
+		}
 	}
 
 	return;
@@ -337,7 +369,7 @@ bool ctm_mpt::CtmMpt::mtrAtPos_(uint8_t id)
 	return at_pos;
 }
 
-bool mtrAtPos_(uint8_t* id)
+bool ctm_mpt::CtmMpt::mtrAtPos_(uint8_t* id)
 {
 	return false;
 }
@@ -358,54 +390,13 @@ bool ctm_mpt::CtmMpt::mtrAtHome_(uint8_t id)
 	return at_home;
 }
 
-bool mtrAtHome_(uint8_t* id)
+bool ctm_mpt::CtmMpt::mtrAtHome_(uint8_t* id)
 {
 	return false;
 }
 
-void ctm_mpt::CtmMpt::snsrInfoAnalyse_(const uint8_t* data)
-{
-	// For debugging.
-	//uint8_t f[] = { 0xAA, 0x55,
-	//						0x00, 0x1B,
-	//						0x00, 0x00,
-	//						0xC1, 0x48, 0xF2, 0xC1,//6
-	//						0x71, 0x71, 0x2F, 0xC2,//10
-	//						0x9D, 0xE1, 0x94, 0xC1,
-	//						0x78, 0xA9, 0x6B, 0xC1,
-	//						0x70, 0x57, 0xE5, 0xC1,
-	//						0x9B, 0x8C, 0xE3, 0xC1,
-	//						0xE7,
-	//						0xAA, 0x55,
-	//						0x00, 0x1B,
-	//						0x00, 0x00,
-	//						0xC1, 0x48, 0xF2, 0xC1,
-	//						0x71, 0x71, 0x2F, 0xC2,
-	//						0x9D, 0xE1, 0x94, 0xC1,
-	//						0x78, 0xA9, 0x6B, 0xC1,
-	//						0x70, 0x57, 0xE5, 0xC1,
-	//						0x9B, 0x8C, 0xE3, 0xC1,
-	//						0xE7 };
-	//uint8_t g[] = { 0xAA, 0x55,
-	//						0x00, 0x1B,
-	//						0xC4, 0xC7,
-	//						0x01, 0x6A, 0xF4, 0xC0,//6
-	//						0xEF, 0x7D, 0x33, 0xC0,//10
-	//						0x49, 0x62, 0xC9, 0xC0,
-	//						0xA2, 0x5C, 0xC6, 0xBD,
-	//						0xA6, 0x19, 0x8F, 0xBD,
-	//						0xAF, 0xDA, 0x69, 0x3E,
-	//						0x6E,
-	//						0xAA, 0x55,
-	//						0x00, 0x1B,
-	//						0xC4, 0xC7,
-	//						0x01, 0x6A, 0xF4, 0xC0,//6
-	//						0xEF, 0x7D, 0x33, 0xC0,//10
-	//						0x49, 0x62, 0xC9, 0xC0,
-	//						0xA2, 0x5C, 0xC6, 0xBD,
-	//						0xA6, 0x19, 0x8F, 0xBD,
-	//						0xAF, 0xDA, 0x69, 0x3E,
-	//						0x6E };
+void ctm_mpt::CtmMpt::snsrInfoAnalyse_(const uint8_t* data, const std::string prefix)
+{	
 	uint16_t pkg_len = 0;
 	uint16_t pkg_num = 0;
 	float ch_val[6] = {};
@@ -417,10 +408,6 @@ void ctm_mpt::CtmMpt::snsrInfoAnalyse_(const uint8_t* data)
 		ROS_WARN("Cannot parse data from sensors.");
 		
 		return;
-	}
-	else
-	{
-		std::cout << "Here is the result." << std::endl;
 	}
 
 	// Package length.
@@ -436,7 +423,7 @@ void ctm_mpt::CtmMpt::snsrInfoAnalyse_(const uint8_t* data)
 	{
 		utils::loadUint8ArrayToFloat32(data + 4 * i + 6, ch_val + i);
 	}
-	std::cout << "Group 1 channel: ( ";
+	std::cout << prefix << " channel: ( ";
 	for (i = 0; i < ch_size; i++)
 	{
 		printf("%.4f ", ch_val[i]);
@@ -444,7 +431,7 @@ void ctm_mpt::CtmMpt::snsrInfoAnalyse_(const uint8_t* data)
 	std::cout << ")." << std::endl;
 
 	// Correction code.
-	printf("Correction code: %02x.\n", data[30]);
+	printf("Correction code: %02x.\n\n", data[30]);
 
 	return;
 }
