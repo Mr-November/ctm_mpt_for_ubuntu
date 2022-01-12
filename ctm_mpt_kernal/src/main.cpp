@@ -5,6 +5,14 @@
 #include <iostream>
 #include <string>
 
+static uint8_t ID_ALL[9] = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+static uint8_t ID_DISTAL[3] = { 4, 5, 6 };
+static uint8_t ID_MIDDLE[3] = { 7, 8, 9 };
+static uint8_t ID_PROXIMAL[3] = { 1, 2, 3 };
+
+static size_t N_ALL = 9;
+static size_t N_SEG = 3;
+
 int main(int argc, char** argv)
 {
     ros::init(argc, argv, "control_kernal");
@@ -15,25 +23,34 @@ int main(int argc, char** argv)
     // sudo chmod a+rw ttyUSB*
     // 
     // ctm_mpt::CtmMpt m;
-    // ctm_mpt::CtmMpt m("/dev/ttyUSB0");
+    ctm_mpt::CtmMpt m("/dev/ttyUSB0");
     // ctm_mpt::CtmMpt m("/dev/ttyUSB0", "/dev/ttyUSB1");
-    ctm_mpt::CtmMpt m("/dev/ttyUSB0", "/dev/ttyUSB1", "/dev/ttyUSB2");
+    // ctm_mpt::CtmMpt m("/dev/ttyUSB0", "/dev/ttyUSB1", "/dev/ttyUSB2");
 
-    int i = 0, j = 3;
+    uint8_t i = 0, j = 8;
 
     // For single motor debugging.
-    m.mtrInit(j);
-    m.mtrSetPos(j, 10000, 20000, 5000, 5000);
-    m.mtrReset(j);
-    m.mtrSetVel(j, -10000, 2.0, 6000, 6000);
-    m.mtrGetPos(j);
-    m.mtrGetVel(j);
+    // m.mtrInit(j);
+    // m.mtrSetPosRel(j, -250000, 20000, 5000, 5000, "UNTIL_ARRIVED");
+    // m.mtrReset(j);
+    // m.mtrSetVel(j, -10000, 2.0, 6000, 6000);
+    // m.mtrSetPosRel(j, 20000, 20000, 5000, 5000, "UNTIL_ARRIVED");
+    // m.mtrSetPosAbs(j, 10000, 20000, 5000, 5000, "EXIT_DIRECTLY");
+    // m.mtrSetPosAbs(j, 100000, 20000, 5000, 5000, "UNTIL_ARRIVED");
+
+    m.mtrInit(ID_ALL, N_ALL);
+    m.mtrZero(ID_ALL, N_ALL);
+    m.mtrStop(ID_ALL, N_ALL);
+    m.mtrGetPos(ID_ALL, N_ALL);
+    m.mtrGetVel(ID_ALL, N_ALL);
+    m.mtrGetTemp(ID_ALL, N_ALL);
+    m.mtrGetVolt(ID_ALL, N_ALL);
 
     // // For multiple motors debugging.
     // for (i = 1; i < 10; i++)
     // {
     //     m.mtrInit(i);
-    //     m.mtrSetPos(i, 100000, 20000, 5000, 5000);
+    //     m.mtrSetPosRel(i, 100000, 20000, 5000, 5000, "UNTIL_ARRIVED");
     //     m.mtrReset(i);
     //     m.mtrSetVel(i, -20000, 3, 5000, 5000);
     // }
@@ -62,9 +79,9 @@ int main(int argc, char** argv)
     // m.snsrInfoAnalyse_(g, "Test group 1");
 	// m.snsrInfoAnalyse_(h, "Test group 2");
 
-    // For sensors debugging.
-    m.snsrInit();
-    m.snsrRead();
+    // // For sensors debugging.
+    // m.snsrInit();
+    // m.snsrRead();
 
     return 0;
 }
