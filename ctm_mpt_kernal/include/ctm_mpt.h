@@ -24,66 +24,66 @@ namespace ctm_mpt
 
 	public:
 		// Motor.
-		void mtrInit(uint8_t id);
+		void mtrInit(const uint8_t id);
 
-		void mtrInit(uint8_t* id, size_t n);
+		void mtrInit(const uint8_t* id, const size_t n);
 
-		void mtrReset(uint8_t id);
+		void mtrReset(const uint8_t id);
 
-		void mtrReset(uint8_t* id, size_t n);
+		void mtrReset(const uint8_t* id, const size_t n);
 
-		void mtrStop(uint8_t id);
+		void mtrStop(const uint8_t id);
 
-		void mtrStop(uint8_t* id, size_t n);
+		void mtrStop(const uint8_t* id, const size_t n);
 
-		void mtrZero(uint8_t id);
+		void mtrZero(const uint8_t id);
 
-		void mtrZero(uint8_t* id, size_t n);
+		void mtrZero(const uint8_t* id, const size_t n);
 
 		// Set motor position.
-		void mtrSetPosAbs(uint8_t id,
-						  int32_t pos, int32_t vel = 5000,
-						  uint32_t k_i = 1500, uint32_t k_f = 1500,
+		void mtrSetPosAbs(const uint8_t id,
+						  const int32_t pos, const int32_t vel = 5000,
+						  const uint32_t k_i = 1500, const uint32_t k_f = 1500,
 						  const std::string mode = "EXIT_DIRECTLY");
 
-		void mtrSetPosRel(uint8_t id,
-						  int32_t pos, int32_t vel = 5000,
-						  uint32_t k_i = 1500, uint32_t k_f = 1500,
+		void mtrSetPosRel(const uint8_t id,
+						  const int32_t pos, const int32_t vel = 5000,
+						  const uint32_t k_i = 1500, const uint32_t k_f = 1500,
 						  const std::string mode = "EXIT_DIRECTLY");
 
 		// Get command position.
-		void mtrGetPos(uint8_t id);
+		void mtrGetPos(const uint8_t id);
 
-		void mtrGetPos(uint8_t* id, size_t n);
+		void mtrGetPos(const uint8_t* id, const size_t n);
 
 		// Set motor velocity.
-		void mtrSetVel(uint8_t id,
-					   int32_t vel, float dur,
-					   uint32_t k_i = 5000, uint32_t k_f = 5000);
+		void mtrSetVel(const uint8_t id,
+					   const int32_t vel, float dur,
+					   const uint32_t k_i = 5000, const uint32_t k_f = 5000);
 
-		void mtrSetVel(uint8_t* id,
-					   int32_t* vel, float* dur,
-					   uint32_t* k_i, uint32_t* k_f);
+		void mtrSetVel(const uint8_t* id,
+					   const int32_t* vel, float* dur,
+					   const uint32_t* k_i, const uint32_t* k_f);
 
 		// Get command velocity in rpm.
-		void mtrGetVel(uint8_t id);
+		void mtrGetVel(const uint8_t id);
 
-		void mtrGetVel(uint8_t* id, size_t n);
+		void mtrGetVel(const uint8_t* id, const size_t n);
 
 		// Get temperature.
-		void mtrGetTemp(uint8_t id);
+		void mtrGetTemp(const uint8_t id);
 
-		void mtrGetTemp(uint8_t* id, size_t n);
+		void mtrGetTemp(const uint8_t* id, const size_t n);
 
 		// Get voltage.
-		void mtrGetVolt(uint8_t id);
+		void mtrGetVolt(const uint8_t id);
 
-		void mtrGetVolt(uint8_t* id, size_t n);
+		void mtrGetVolt(const uint8_t* id, const size_t n);
 
 		// Sensor.
 		void snsrInit(void);
 
-		void snsrRead(void);
+		void snsrRead(float* dst = NULL);
 
 	private:
 		serial::Serial snsr_serial_1_;
@@ -99,11 +99,11 @@ namespace ctm_mpt
 		
 		void snsrWrite_(const std::string& cmd);
 
-		bool mtrAtPos_(uint8_t id);
+		bool mtrAtPos_(const uint8_t id);
 
-		bool mtrAtHome_(uint8_t id);
+		bool mtrAtHome_(const uint8_t id);
 		
-		void snsrInfoAnalyse_(const uint8_t* data, const std::string prefix);
+		void snsrInfoAnalyse_(const uint8_t* data, const std::string prefix, float* dst = NULL, const size_t len = 0);
 	};
 }
 
