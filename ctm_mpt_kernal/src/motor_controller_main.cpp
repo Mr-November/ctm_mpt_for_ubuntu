@@ -23,11 +23,11 @@ int main(int argc, char** argv)
     // sudo chmod a+rw ttyUSB*
     // 
     // ctm_mpt::CtmMpt m;
-    // ctm_mpt::CtmMpt m("/dev/ttyUSB2");
+    ctm_mpt::CtmMpt m("/dev/ttyUSB2");
     // ctm_mpt::CtmMpt m("/dev/ttyUSB0", "/dev/ttyUSB1");
-    ctm_mpt::CtmMpt m("/dev/ttyUSB0", "/dev/ttyUSB1", "/dev/ttyUSB2");
+    // ctm_mpt::CtmMpt m("/dev/ttyUSB0", "/dev/ttyUSB1", "/dev/ttyUSB2");
 
-    uint8_t i = 0, j = 8;
+    uint8_t i = 0, j = 6;
 
     // For single motor debugging.
     // m.mtrInit(j);
@@ -39,6 +39,9 @@ int main(int argc, char** argv)
 
     m.mtrInit(ID_ALL, N_ALL);
     m.mtrGetPos(ID_ALL, N_ALL);
+    m.mtrGetVel(ID_ALL, N_ALL);
+    m.mtrGetTemp(ID_ALL, N_ALL);
+    m.mtrGetVolt(ID_ALL, N_ALL);
 
     // m.mtrInit(ID_ALL, N_ALL);
     // m.mtrZero(ID_ALL, N_ALL);

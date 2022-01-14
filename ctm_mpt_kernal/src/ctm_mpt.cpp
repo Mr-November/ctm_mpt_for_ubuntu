@@ -165,8 +165,8 @@ void ctm_mpt::CtmMpt::mtrInit(const uint8_t* id, const size_t n)
 		this->mtrWrite_(cmd_rst_paras, 19);
 	}
 	this->mtrReset(id, n);
-
-	ROS_INFO_STREAM("Motors are initialised.");
+	
+	ROS_INFO_STREAM("Motors are initialised.\n");
 
 	return;
 }
@@ -332,7 +332,7 @@ void ctm_mpt::CtmMpt::mtrSetPosAbs(const uint8_t id,
 	}
 	else
 	{
-		ROS_WARN("What's the matter?\n");
+		ROS_WARN("What's the matter? You gave a wrong mode of `mtrSetPosAbs`.\n");
 	}
 
 	return;
@@ -378,7 +378,7 @@ void ctm_mpt::CtmMpt::mtrSetPosRel(const uint8_t id,
 	}
 	else
 	{
-		ROS_WARN("What's the matter?\n");
+		ROS_WARN("What's the matter? You gave a wrong mode of `mtrSetPosRel`.\n");
 	}
 
 	return;
@@ -560,14 +560,15 @@ void ctm_mpt::CtmMpt::mtrGetVolt(const uint8_t* id, const size_t n)
 void ctm_mpt::CtmMpt::snsrInit(void)
 {
 	std::string cmd_stop_gsd("AT+GSD=STOP");
-	std::string cmd_uart_paras("AT+UARTCFG=115200,8,1.00,N");
-	std::string cmd_smpf("AT+SMPF=50");
+	std::string cmd_paras("AT+UARTCFG=115200,8,1.00,N");
+	std::string cmd_smpf("AT+SMPF=");
 
 	this->snsrWrite_(cmd_stop_gsd);
-	this->snsrWrite_(cmd_uart_paras);
+	this->snsrWrite_(cmd_paras);
+	cmd_smpf += std::to_string(this->sampling_rate_);
 	this->snsrWrite_(cmd_smpf);
 
-	ROS_INFO_STREAM("Sensors are initialised.");
+	ROS_INFO_STREAM("Sensors are initialised.\n");
 
 	return;
 }
@@ -576,7 +577,7 @@ void ctm_mpt::CtmMpt::snsrRead(float* dst)
 {
 	std::string cmd_read("AT+GOD");
 	size_t bytes_read = 0;
-	uint8_t data_1[31] = {}, data_2[31] = {};
+	uint8_t data_1[31] = { 0 }, data_2[31] = { 0 };
 
 	// Write command of reading data.
 	this->snsrWrite_(cmd_read);
@@ -616,6 +617,74 @@ void ctm_mpt::CtmMpt::snsrRead(float* dst)
 	return;
 }
 
+void ctm_mpt::CtmMpt::snsrGetCfg(void)
+{
+	std::string cmd_read_paras("AT+UARTCFG=?");
+	std::string cmd_read_smpf("AT+SMPF=?");
+	std::string rsp_1_1, rsp_1_2, rsp_2_1, rsp_2_2;
+
+	this->snsrWrite_(cmd_read_paras);
+	this->snsr_serial_1_.readline(rsp_1_1, 64, "\r\n");
+	this->snsr_serial_2_.readline(rsp_1_2, 64, "\r\n");
+	if (rsp_1_1 == rsp_1_2)
+	{
+		rsp_1_1.pop_back();
+		rsp_1_1.pop_back();
+	}
+	else
+	{
+		ROS_WARN("Inconsistency between two sensor groups.");
+	}
+
+	this->snsrWrite_(cmd_read_smpf);
+	this->snsr_serial_1_.readline(rsp_2_1, 64, "\r\n");
+	this->snsr_serial_2_.readline(rsp_2_2, 64, "\r\n");
+	if (rsp_2_1 == rsp_2_2)
+	{
+		rsp_2_1.pop_back();
+		rsp_2_1.pop_back();
+	}
+	else
+	{
+		ROS_WARN("Inconsistency between two sensor groups.");
+	}
+
+	ROS_INFO_STREAM(rsp_1_1 << ", " << rsp_2_1 << ".\n");
+
+	return;
+}
+
+void ctm_mpt::CtmMpt::snsrGetMat(void)
+{
+	std::string cmd_read_mat("AT+DCPM=?");
+	std::string rsp_1, rsp_2;
+
+	this->snsrWrite_(cmd_read_mat);
+	this->snsr_serial_1_.readline(rsp_1, 512, "\r\n");
+	this->snsr_serial_2_.readline(rsp_2, 512, "\r\n");
+
+	rsp_1.insert(9, "\n");
+	rsp_1.insert(66, "\n");
+	rsp_1.insert(123, "\n");
+	rsp_1.insert(180, "\n");
+	rsp_1.insert(237, "\n");
+	rsp_1.insert(294, "\n");
+
+	rsp_2.insert(9, "\n");
+	rsp_2.insert(66, "\n");
+	rsp_2.insert(123, "\n");
+	rsp_2.insert(180, "\n");
+	rsp_2.insert(237, "\n");
+	rsp_2.insert(294, "\n");
+
+	ROS_INFO("Sensor group 1 decoupling matrix:");
+	std::cout << rsp_1 << std::endl;
+	ROS_INFO("Sensor group 2 decoupling matrix:");
+	std::cout << rsp_2 << std::endl;
+
+	return;
+}
+
 void ctm_mpt::CtmMpt::mtrWrite_(const uint8_t* cmd, const size_t len)
 {
 	uint8_t* new_cmd = new uint8_t[len + 2]; // Create a new array.
@@ -627,7 +696,7 @@ void ctm_mpt::CtmMpt::mtrWrite_(const uint8_t* cmd, const size_t len)
 
 	// Write to motors.
 	bytes_wrote = this->mtr_serial_.write(new_cmd, len + 2);
-	// If the command is not to read the motor register.
+	// If the command is not to read the motor registers.
 	if (new_cmd[1] != 0x03)
 	{
 		bytes_read = this->mtr_serial_.read(rsp, 8);
@@ -669,7 +738,7 @@ void ctm_mpt::CtmMpt::snsrWrite_(const std::string& cmd)
 		}
 
 		// Get response from group k.
-		if (cmd != "AT+GOD" && cmd != "AT+GSD" && cmd != "AT+GSD=STOP")
+		if (cmd != "AT+GOD" && cmd.back() != '?')
 		{
 			if (k == 1)
 			{
@@ -680,7 +749,7 @@ void ctm_mpt::CtmMpt::snsrWrite_(const std::string& cmd)
 					std::cout << "Full response: " << rsp_1 << std::endl;
 				}
 			}
-			else if (k == 2)
+			else // In this case k = 2.
 			{
 				bytes_read = this->snsr_serial_2_.readline(rsp_2, 64, "\r\n");
 				if (this->gossip_)
@@ -689,22 +758,6 @@ void ctm_mpt::CtmMpt::snsrWrite_(const std::string& cmd)
 					std::cout << "Full response: " << rsp_2 << std::endl;
 				}
 			}
-			else
-			{
-				ROS_WARN("What's the matter?\n");
-			}
-		}
-		else if (cmd == "AT+GOD")
-		{
-			;
-		}
-		else if (cmd == "AT+GSD")
-		{
-			ROS_WARN("Caution! Overflow!\n");
-		}
-		else // In this case, cmd == "AT+GSD=STOP".
-		{
-			ROS_WARN("Caution! Overflow!\n");
 		}
 	}
 

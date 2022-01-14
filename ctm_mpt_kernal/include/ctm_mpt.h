@@ -85,12 +85,18 @@ namespace ctm_mpt
 
 		void snsrRead(float* dst = NULL);
 
+		void snsrGetCfg(void);
+
+		void snsrGetMat(void);
+
 	private:
 		serial::Serial snsr_serial_1_;
 
 		serial::Serial snsr_serial_2_;
 		
 		serial::Serial mtr_serial_;
+
+		const uint8_t sampling_rate_ = 50;
 
 		const bool gossip_ = false;
 

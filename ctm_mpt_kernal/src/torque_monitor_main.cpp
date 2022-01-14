@@ -28,21 +28,23 @@ int main(int argc, char** argv)
 
     std_msgs::Float32MultiArray msg;
     std_msgs::MultiArrayDimension dim;
-    size_t i = 0;
-
-    m.snsrInit();
     dim.label = "tau";
     dim.size = 9;
     dim.stride = 9;
     msg.layout.dim.push_back(dim);
     msg.layout.data_offset = 0;
     msg.data = std::vector<float>(9, 0.0);
-    ros::Rate loop_rate(20);
+
+    m.snsrInit();
+    m.snsrGetCfg();
+    m.snsrGetMat();
+    ros::Rate loop_rate(50);
 
     while (ros::ok())
     {
         float trq[9] = { 0.0 };
         bool is_overloaded = false;
+        size_t i = 0;
 
         m.snsrRead(trq);
         for (i = 0; i < 9; i++)
