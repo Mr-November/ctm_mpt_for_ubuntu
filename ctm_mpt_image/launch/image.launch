@@ -2,7 +2,7 @@
   <param name = "robot_description" command = "$(find xacro)/xacro '$(find ctm_mpt_image)/urdf/ctm_mpt.xacro'" />
 
   <!-- send fake joint values -->
-  <node pkg = "joint_state_publisher_gui" type = "joint_state_publisher_gui" name = "joint_state_publisher_gui" output = "screen"/>
+  <!-- <node pkg = "joint_state_publisher_gui" type = "joint_state_publisher_gui" name = "joint_state_publisher_gui" output = "screen"/> -->
 
   <!-- Combine joint values -->
   <node pkg = "robot_state_publisher" type = "robot_state_publisher" name = "robot_state_publisher" output = "screen"/>

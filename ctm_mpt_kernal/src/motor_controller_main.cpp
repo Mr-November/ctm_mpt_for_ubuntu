@@ -18,30 +18,32 @@ int main(int argc, char** argv)
     ros::init(argc, argv, "ctm_mpt_motor_controller");
     ros::NodeHandle nh;
 
-    // cd /dev
-    // ls -al ttyUSB*
+    // In the terminal, run the following.
+    // $ cd /dev
+    // $ ls -al ttyUSB*
     // sudo chmod a+rw ttyUSB*
     // 
     // ctm_mpt::CtmMpt m;
-    ctm_mpt::CtmMpt m("/dev/ttyUSB2");
+    ctm_mpt::CtmMpt m("/dev/ttyUSB0");
     // ctm_mpt::CtmMpt m("/dev/ttyUSB0", "/dev/ttyUSB1");
     // ctm_mpt::CtmMpt m("/dev/ttyUSB0", "/dev/ttyUSB1", "/dev/ttyUSB2");
 
-    uint8_t i = 0, j = 6;
+    uint8_t i = 0, j = 1;
 
     // For single motor debugging.
-    // m.mtrInit(j);
-    // m.mtrSetPosRel(j, -250000, 20000, 5000, 5000, "UNTIL_ARRIVED");
-    // m.mtrReset(j);
-    // m.mtrSetVel(j, -10000, 2.0, 6000, 6000);
-    // m.mtrSetPosRel(j, 20000, 20000, 5000, 5000, "UNTIL_ARRIVED");
-    // m.mtrSetPosAbs(j, 10000, 20000, 5000, 5000, "EXIT_DIRECTLY");
+    m.mtrInit(j);
+    m.mtrSetPosRel(j, -250000, 20000, 5000, 5000, "UNTIL_ARRIVED");
+    m.mtrReset(j);
+    m.mtrSetVel(j, -10000, 2.0, 6000, 6000);
+    m.mtrSetPosRel(j, 20000, 20000, 5000, 5000, "EXIT_DIRECTLY"); // cannot use.
+    m.mtrSetPosAbs(j, 10000, 20000, 5000, 5000, "UNTIL_ARRIVED");
+    m.mtrReset(j);
 
-    m.mtrInit(ID_ALL, N_ALL);
-    m.mtrGetPos(ID_ALL, N_ALL);
-    m.mtrGetVel(ID_ALL, N_ALL);
-    m.mtrGetTemp(ID_ALL, N_ALL);
-    m.mtrGetVolt(ID_ALL, N_ALL);
+    // m.mtrInit(ID_ALL, N_ALL);
+    // m.mtrGetPos(ID_ALL, N_ALL);
+    // m.mtrGetVel(ID_ALL, N_ALL);
+    // m.mtrGetTemp(ID_ALL, N_ALL);
+    // m.mtrGetVolt(ID_ALL, N_ALL);
 
     // m.mtrInit(ID_ALL, N_ALL);
     // m.mtrZero(ID_ALL, N_ALL);

@@ -133,6 +133,7 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
+add_executable(virtual_controller_node src/virtual_controller_main.cpp)
 add_executable(motor_controller_node src/motor_controller_main.cpp src/ctm_mpt.cpp src/utils.cpp)
 add_executable(torque_monitor_node src/torque_monitor_main.cpp src/ctm_mpt.cpp src/utils.cpp)
 
@@ -147,6 +148,9 @@ add_executable(torque_monitor_node src/torque_monitor_main.cpp src/ctm_mpt.cpp s
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
+target_link_libraries(virtual_controller_node
+  ${catkin_LIBRARIES}
+)
 target_link_libraries(motor_controller_node
   ${catkin_LIBRARIES}
 )
