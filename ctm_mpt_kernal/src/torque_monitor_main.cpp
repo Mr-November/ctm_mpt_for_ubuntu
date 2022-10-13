@@ -32,8 +32,9 @@ int main(int argc, char** argv)
     // 
     // ctm_mpt::CtmMpt m;
     // ctm_mpt::CtmMpt m("/dev/ttyUSB0");
-    // ctm_mpt::CtmMpt m("/dev/ttyUSB0", "/dev/ttyUSB1");
-    ctm_mpt::CtmMpt m("/dev/ttyUSB0", "/dev/ttyUSB1", "/dev/ttyUSB2");
+    ctm_mpt::CtmMpt m("/dev/ttyUSB1", "/dev/ttyUSB2");
+    //                   "sensor 1",     "sensor 2",     "motor"
+    // ctm_mpt::CtmMpt m("/dev/ttyUSB1", "/dev/ttyUSB2", "/dev/ttyUSB0");
 
     std_msgs::Float32MultiArray msg;
     std_msgs::MultiArrayDimension dim;
@@ -48,11 +49,11 @@ int main(int argc, char** argv)
     m.snsrGetCfg();
     m.snsrGetMat();
 
-    m.mtrInit(ID_ALL, N_ALL);
-    m.mtrGetPos(ID_ALL, N_ALL);
-    m.mtrGetVel(ID_ALL, N_ALL);
-    m.mtrGetTemp(ID_ALL, N_ALL);
-    m.mtrGetVolt(ID_ALL, N_ALL);
+    // m.mtrInit(ID_ALL, N_ALL);
+    // m.mtrGetPos(ID_ALL, N_ALL);
+    // m.mtrGetVel(ID_ALL, N_ALL);
+    // m.mtrGetTemp(ID_ALL, N_ALL);
+    // m.mtrGetVolt(ID_ALL, N_ALL);
 
     // init pos: 26100, 10200, 74700, 29800, -2500, 267200, 42460, 10900, 82300
     // m.mtrSetPosRel(5, -10000, 5000, 5000, 5000, "UNTIL_ARRIVED");
@@ -82,7 +83,7 @@ int main(int argc, char** argv)
     while (ros::ok())
     {
         float trq[9] = { 0.0 };
-        bool is_preloaded = true;
+        // bool is_preloaded = true;
         size_t k = 0;
 
         m.snsrRead(trq);
@@ -117,13 +118,13 @@ int main(int argc, char** argv)
         }
         trq_pub.publish(msg);
 
-        if (is_preloaded)
-        {
-            m.mtrGetPos(ID_ALL, N_ALL);
-            ROS_INFO_STREAM("Preloaded.\n");
+        // if (is_preloaded)
+        // {
+        //     m.mtrGetPos(ID_ALL, N_ALL);
+        //     ROS_INFO_STREAM("Preloaded.\n");
 
-            // return 0;
-        }
+        //     // return 0;
+        // }
     }
 
 

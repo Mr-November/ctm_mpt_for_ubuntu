@@ -1,16 +1,16 @@
 <launch>
     <group ns = "ctm_mpt">
-        <node pkg = "ctm_mpt_kernal" type = "virtual_controller_node" name = "virtual_controller" output = "screen"/>
+        <!-- <node pkg = "ctm_mpt_kernal" type = "virtual_controller_node" name = "virtual_controller" output = "screen"/> -->
 
         <!-- <node pkg = "ctm_mpt_kernal" type = "motor_controller_node" name = "motor_controller" output = "screen"/> -->
 
-        <!-- <node pkg = "ctm_mpt_kernal" type = "torque_monitor_node" name = "torque_monitor" output = "screen"/> -->
+        <node pkg = "ctm_mpt_kernal" type = "torque_monitor_node" name = "torque_monitor" output = "screen"/>
 
-        <include file = "$(find ctm_mpt_image)/launch/image.launch"/>
+        <!-- <include file = "$(find ctm_mpt_image)/launch/image.launch"/> -->
         
     </group>
 
 
-    <!-- <node pkg = "rqt_gui" type = "rqt_gui" name = "ctm_mpt_plot"/> -->
+    <node pkg = "rqt_gui" type = "rqt_gui" name = "ctm_mpt_plot"/>
     
 </launch>
