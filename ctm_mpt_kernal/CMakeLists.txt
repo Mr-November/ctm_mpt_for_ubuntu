@@ -134,8 +134,8 @@ include_directories(
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
 add_executable(virtual_controller_node src/virtual_controller_main.cpp)
-add_executable(motor_controller_node src/motor_controller_main.cpp src/ctm_mpt.cpp src/utils.cpp)
-add_executable(torque_monitor_node src/torque_monitor_main.cpp src/ctm_mpt.cpp src/utils.cpp)
+add_executable(motor_controller_node src/motor_controller_main.cpp src/ctm_mpt.cpp src/ctm_mpt2.cpp src/utils.cpp)
+add_executable(torque_monitor_node src/torque_monitor_main.cpp src/ctm_mpt.cpp src/ctm_mpt2.cpp src/utils.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the

@@ -20,7 +20,7 @@ namespace ctm_mpt
 			   const std::string& snsr_port_2,
 			   const std::string& mtr_port);
 
-		~CtmMpt();
+		virtual ~CtmMpt();
 
 	public:
 		// Motor.

@@ -3,8 +3,8 @@
 <robot name="ctm_mpt" xmlns:xacro="http://www.ros.org/wiki/xacro">
   <!-- Constants. -->
   <xacro:property name="PI" value="3.1415926535897931"/>
-  <xacro:property name="LOWER" value="${-PI/9}"/>
-  <xacro:property name="UPPER" value="${PI/9}"/>
+  <xacro:property name="LOWER" value="${-PI/2}"/>
+  <xacro:property name="UPPER" value="${PI/2}"/>
   <xacro:property name="EFFORT" value="100"/>
   <xacro:property name="VELOCITY" value="1.0"/>
 
@@ -205,7 +205,7 @@
       rpy="0 0 0"/>
     <parent link="Seg1"/>
     <child link="UnvJnt2"/>
-    <axis xyz="0 1 0"/>
+    <axis xyz="1 0 0"/>
     <limit
       lower="${LOWER}"
       upper="${UPPER}"
@@ -218,7 +218,7 @@
     <inertial>
       <origin
         xyz="1.86533836377123E-07 -1.0468209887815E-06 0.0639997244435651"
-        rpy="0 0 0"/>
+        rpy="0 0 ${PI/2}"/>
       <mass value="0.525659230606409"/>
       <inertia
         ixx="0.00102963209023682"
@@ -232,7 +232,7 @@
     <visual>
       <origin
         xyz="0 0 0"
-        rpy="0 0 0"/>
+        rpy="0 0 ${PI/2}"/>
       <geometry>
         <mesh filename="package://ctm_mpt_image/meshes/Seg.stl"/>
       </geometry>
@@ -244,7 +244,7 @@
     <collision>
       <origin
         xyz="0 0 0"
-        rpy="0 0 0"/>
+        rpy="0 0 ${PI/2}"/>
       <geometry>
         <mesh filename="package://ctm_mpt_image/meshes/Seg.stl"/>
       </geometry>
@@ -258,7 +258,7 @@
       rpy="0 0 0"/>
     <parent link="UnvJnt2"/>
     <child link="Seg2"/>
-    <axis xyz="1 0 0"/>
+    <axis xyz="0 1 0"/>
     <limit
       lower="${LOWER}"
       upper="${UPPER}"
@@ -417,7 +417,7 @@
       rpy="0 0 0"/>
     <parent link="Seg3"/>
     <child link="UnvJnt4"/>
-    <axis xyz="0 1 0"/>
+    <axis xyz="1 0 0"/>
     <limit
       lower="${LOWER}"
       upper="${UPPER}"
@@ -430,7 +430,7 @@
     <inertial>
       <origin
         xyz="1.86533835044855E-07 -1.04682098811537E-06 0.0639997244435642"
-        rpy="0 0 0"/>
+        rpy="0 0 ${PI/2}"/>
       <mass value="0.525659230606464"/>
       <inertia
         ixx="0.00102963209023689"
@@ -444,7 +444,7 @@
     <visual>
       <origin
         xyz="0 0 0"
-        rpy="0 0 0"/>
+        rpy="0 0 ${PI/2}"/>
       <geometry>
         <mesh filename="package://ctm_mpt_image/meshes/Seg.stl"/>
       </geometry>
@@ -456,7 +456,7 @@
     <collision>
       <origin
         xyz="0 0 0"
-        rpy="0 0 0"/>
+        rpy="0 0 ${PI/2}"/>
       <geometry>
         <mesh filename="package://ctm_mpt_image/meshes/Seg.stl"/>
       </geometry>
@@ -470,7 +470,7 @@
       rpy="0 0 0"/>
     <parent link="UnvJnt4"/>
     <child link="Seg4"/>
-    <axis xyz="1 0 0"/>
+    <axis xyz="0 1 0"/>
     <limit
       lower="${LOWER}"
       upper="${UPPER}"
@@ -629,7 +629,7 @@
       rpy="0 0 0"/>
     <parent link="Seg5"/>
     <child link="UnvJnt6"/>
-    <axis xyz="0 1 0"/>
+    <axis xyz="1 0 0"/>
     <limit
       lower="${LOWER}"
       upper="${UPPER}"
@@ -642,7 +642,7 @@
     <inertial>
       <origin
         xyz="1.86533836377123E-07 -1.04682098855946E-06 0.0639997244435645"
-        rpy="0 0 0"/>
+        rpy="0 0 ${PI/2}"/>
       <mass value="0.525659230606459"/>
       <inertia
         ixx="0.00102963209023687"
@@ -656,7 +656,7 @@
     <visual>
       <origin
         xyz="0 0 0"
-        rpy="0 0 0"/>
+        rpy="0 0 ${PI/2}"/>
       <geometry>
         <mesh filename="package://ctm_mpt_image/meshes/Seg.stl"/>
       </geometry>
@@ -668,7 +668,7 @@
     <collision>
       <origin
         xyz="0 0 0"
-        rpy="0 0 0"/>
+        rpy="0 0 ${PI/2}"/>
       <geometry>
         <mesh filename="package://ctm_mpt_image/meshes/Seg.stl"/>
       </geometry>
@@ -682,7 +682,7 @@
       rpy="0 0 0"/>
     <parent link="UnvJnt6"/>
     <child link="Seg6"/>
-    <axis xyz="1 0 0"/>
+    <axis xyz="0 1 0"/>
     <limit
       lower="${LOWER}"
       upper="${UPPER}"
@@ -841,7 +841,7 @@
       rpy="0 0 0"/>
     <parent link="Seg7"/>
     <child link="UnvJnt8"/>
-    <axis xyz="0 1 0"/>
+    <axis xyz="1 0 0"/>
     <limit
       lower="${LOWER}"
       upper="${UPPER}"
@@ -854,7 +854,7 @@
     <inertial>
       <origin
         xyz="1.86533834600766E-07 -1.04682098811537E-06 0.0639997244435644"
-        rpy="0 0 0"/>
+        rpy="0 0 ${PI/2}"/>
       <mass value="0.525659230606457"/>
       <inertia
         ixx="0.00102963209023687"
@@ -868,7 +868,7 @@
     <visual>
       <origin
         xyz="0 0 0"
-        rpy="0 0 0"/>
+        rpy="0 0 ${PI/2}"/>
       <geometry>
         <mesh filename="package://ctm_mpt_image/meshes/Seg.stl"/>
       </geometry>
@@ -880,7 +880,7 @@
     <collision>
       <origin
         xyz="0 0 0"
-        rpy="0 0 0"/>
+        rpy="0 0 ${PI/2}"/>
       <geometry>
         <mesh filename="package://ctm_mpt_image/meshes/Seg.stl"/>
       </geometry>
@@ -894,7 +894,7 @@
       rpy="0 0 0"/>
     <parent link="UnvJnt8"/>
     <child link="Seg8"/>
-    <axis xyz="1 0 0"/>
+    <axis xyz="0 1 0"/>
     <limit
       lower="${LOWER}"
       upper="${UPPER}"
