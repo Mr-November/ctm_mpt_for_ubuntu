@@ -5,33 +5,33 @@
 #include "ctm_mpt2.h"
 #include "utils.h"
 
-ctm_mpt::CtmMpt2::CtmMpt2(const std::string& port_name)
-: ctm_mpt::CtmMpt::CtmMpt(port_name)
+CtmMpt2::CtmMpt2(const std::string& port_name)
+: CtmMpt::CtmMpt(port_name)
 {
     return;
 }
 
-ctm_mpt::CtmMpt2::CtmMpt2(const std::string& snsr_port_1,
+CtmMpt2::CtmMpt2(const std::string& snsr_port_1,
 			   const std::string& snsr_port_2)
-: ctm_mpt::CtmMpt::CtmMpt(snsr_port_1, snsr_port_2)
+: CtmMpt::CtmMpt(snsr_port_1, snsr_port_2)
 {
     return;
 }
 
-ctm_mpt::CtmMpt2::CtmMpt2(const std::string& snsr_port_1,
+CtmMpt2::CtmMpt2(const std::string& snsr_port_1,
 			   const std::string& snsr_port_2,
 			   const std::string& mtr_port)
-: ctm_mpt::CtmMpt::CtmMpt(snsr_port_1, snsr_port_2, mtr_port)
+: CtmMpt::CtmMpt(snsr_port_1, snsr_port_2, mtr_port)
 {
     return;
 }
 
-ctm_mpt::CtmMpt2::~CtmMpt2()
+CtmMpt2::~CtmMpt2()
 {
     return;
 }
 
-bool ctm_mpt::CtmMpt2::readTrq(float* trq)
+bool CtmMpt2::readTrq(float* trq)
 {
     size_t k = 0;
     bool load = false;
@@ -51,7 +51,7 @@ bool ctm_mpt::CtmMpt2::readTrq(float* trq)
     return load;
 }
 
-void ctm_mpt::CtmMpt2::stopAll()
+void CtmMpt2::stopAll()
 {
     this->mtrStop(this->ID_ALL, this->N_ALL);
     ROS_ERROR_STREAM("STOP ALL.");
@@ -59,7 +59,7 @@ void ctm_mpt::CtmMpt2::stopAll()
     return;
 }
 
-void ctm_mpt::CtmMpt2::resetAll()
+void CtmMpt2::resetAll()
 {
     this->mtrReset(this->ID_ALL, this->N_ALL);
     ROS_ERROR_STREAM("RESET ALL.");

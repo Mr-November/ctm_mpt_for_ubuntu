@@ -15,7 +15,7 @@ static const size_t N_SEG = 3;
 
 int main(int argc, char** argv)
 {
-    ros::init(argc, argv, "ctm_mpt_motor_controller");
+    ros::init(argc, argv, "motor_controller");
     ros::NodeHandle nh;
 
     // In the terminal, run the following.
@@ -23,10 +23,10 @@ int main(int argc, char** argv)
     // $ ls -al ttyUSB*
     // sudo chmod a+rw ttyUSB*
     // 
-    // ctm_mpt::CtmMpt m;
-    ctm_mpt::CtmMpt m("/dev/ttyUSB0");
-    // ctm_mpt::CtmMpt m("/dev/ttyUSB0", "/dev/ttyUSB1");
-    // ctm_mpt::CtmMpt m("/dev/ttyUSB0", "/dev/ttyUSB1", "/dev/ttyUSB2");
+    // CtmMpt m;
+    CtmMpt m("/dev/ttyUSB0");
+    // CtmMpt m("/dev/ttyUSB0", "/dev/ttyUSB1");
+    // CtmMpt m("/dev/ttyUSB0", "/dev/ttyUSB1", "/dev/ttyUSB2");
 
     uint8_t i = 0, j = 1;
 

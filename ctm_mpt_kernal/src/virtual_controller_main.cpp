@@ -13,7 +13,7 @@ int main(int argc, char** argv)
 	// ROS_INFO_STREAM("Working directory: \"" << wd << "\".");
 	// free(wd);
 
-	ros::init(argc, argv, "ctm_mpt_virtual_controller");
+	ros::init(argc, argv, "virtual_controller");
 	ros::NodeHandle nh;
 
 	// ros::Publisher pos_pub = nh.advertise<std_msgs::Int32MultiArray>("jnt_pos", 1000);

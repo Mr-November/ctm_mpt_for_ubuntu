@@ -7,7 +7,7 @@
 
 int main(int argc, char** argv)
 {
-    ros::init(argc, argv, "ctm_mpt_torque_monitor");
+    ros::init(argc, argv, "torque_monitor");
     ros::NodeHandle nh;
     ros::Publisher trq_pub = nh.advertise<std_msgs::Float32MultiArray>("torque", 100);
     
@@ -15,10 +15,10 @@ int main(int argc, char** argv)
     // ls -al ttyUSB*
     // sudo chmod a+rw ttyUSB*
     // 
-    // ctm_mpt::CtmMpt2 m("/dev/ttyUSB0");
-    // ctm_mpt::CtmMpt2 m("/dev/ttyUSB2", "/dev/ttyUSB1");
+    // CtmMpt2 m("/dev/ttyUSB0");
+    // CtmMpt2 m("/dev/ttyUSB2", "/dev/ttyUSB1");
     //                   "sensor 1",     "sensor 2",     "motor"
-    ctm_mpt::CtmMpt2 m("/dev/ttyUSB1", "/dev/ttyUSB2", "/dev/ttyUSB0");
+    CtmMpt2 m("/dev/ttyUSB1", "/dev/ttyUSB2", "/dev/ttyUSB0");
 
     std_msgs::Float32MultiArray msg;
     std_msgs::MultiArrayDimension dim;

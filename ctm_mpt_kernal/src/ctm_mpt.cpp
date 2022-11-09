@@ -5,12 +5,12 @@
 #include "ctm_mpt.h"
 #include "utils.h"
 
-ctm_mpt::CtmMpt::CtmMpt()
+CtmMpt::CtmMpt()
 {
 	return;
 }
 
-ctm_mpt::CtmMpt::CtmMpt(const std::string& port_name)
+CtmMpt::CtmMpt(const std::string& port_name)
 : mtr_serial_(port_name,
 			  115200,
 			  serial::Timeout::simpleTimeout(1000),
@@ -30,7 +30,7 @@ ctm_mpt::CtmMpt::CtmMpt(const std::string& port_name)
 	return;
 }
 
-ctm_mpt::CtmMpt::CtmMpt(const std::string& snsr_port_1,
+CtmMpt::CtmMpt(const std::string& snsr_port_1,
 			   			const std::string& snsr_port_2)
 : snsr_serial_1_(snsr_port_1,
 				 115200,
@@ -66,7 +66,7 @@ ctm_mpt::CtmMpt::CtmMpt(const std::string& snsr_port_1,
 	return;
 }
 
-ctm_mpt::CtmMpt::CtmMpt(const std::string& snsr_port_1,
+CtmMpt::CtmMpt(const std::string& snsr_port_1,
 			   			const std::string& snsr_port_2,
 			   			const std::string& mtr_port)
 : snsr_serial_1_(snsr_port_1,
@@ -118,12 +118,12 @@ ctm_mpt::CtmMpt::CtmMpt(const std::string& snsr_port_1,
 	return;
 }
 
-ctm_mpt::CtmMpt::~CtmMpt()
+CtmMpt::~CtmMpt()
 {
 	return;
 }
 
-void ctm_mpt::CtmMpt::mtrInit(const uint8_t id)
+void CtmMpt::mtrInit(const uint8_t id)
 {
 	uint8_t cmd_reso[] = { 0x00, 0x10, 0x03, 0x80, 0x00, 0x04, 0x08,
 						   0x00, 0x00, 0x00, 0x01, // Electronic gear A = 1.
@@ -145,7 +145,7 @@ void ctm_mpt::CtmMpt::mtrInit(const uint8_t id)
 	return;
 }
 
-void ctm_mpt::CtmMpt::mtrInit(const uint8_t* id, const size_t n)
+void CtmMpt::mtrInit(const uint8_t* id, const size_t n)
 {
 	uint8_t cmd_reso[] = { 0x00, 0x10, 0x03, 0x80, 0x00, 0x04, 0x08,
 						   0x00, 0x00, 0x00, 0x01, // Electronic gear A = 1.
@@ -172,7 +172,7 @@ void ctm_mpt::CtmMpt::mtrInit(const uint8_t* id, const size_t n)
 	return;
 }
 
-void ctm_mpt::CtmMpt::mtrReset(const uint8_t id)
+void CtmMpt::mtrReset(const uint8_t id)
 {
 	uint8_t cmd_rst[] = { 0x00, 0x06, 0x00, 0x7d, 0x00, 0x10 };
 
@@ -185,7 +185,7 @@ void ctm_mpt::CtmMpt::mtrReset(const uint8_t id)
 	return;
 }
 
-void ctm_mpt::CtmMpt::mtrReset(const uint8_t* id, const size_t n)
+void CtmMpt::mtrReset(const uint8_t* id, const size_t n)
 {
 	uint8_t cmd_rst[] = { 0x00, 0x06, 0x00, 0x7d, 0x00, 0x10 };
 	size_t k = 0;
@@ -216,7 +216,7 @@ void ctm_mpt::CtmMpt::mtrReset(const uint8_t* id, const size_t n)
 	return;
 }
 
-void ctm_mpt::CtmMpt::mtrStop(const uint8_t id)
+void CtmMpt::mtrStop(const uint8_t id)
 {
 	uint8_t cmd_stp[] = { 0x00, 0x06, 0x00, 0x7d, 0x00, 0x20 };
 
@@ -228,7 +228,7 @@ void ctm_mpt::CtmMpt::mtrStop(const uint8_t id)
 	return;
 }
 
-void ctm_mpt::CtmMpt::mtrStop(const uint8_t* id, const size_t n)
+void CtmMpt::mtrStop(const uint8_t* id, const size_t n)
 {
 	uint8_t cmd_stp[] = { 0x00, 0x06, 0x00, 0x7d, 0x00, 0x20 };
 	size_t k = 0;
@@ -249,7 +249,7 @@ void ctm_mpt::CtmMpt::mtrStop(const uint8_t* id, const size_t n)
 	return;
 }
 
-void ctm_mpt::CtmMpt::mtrZero(const uint8_t id)
+void CtmMpt::mtrZero(const uint8_t id)
 {
 	uint8_t cmd_zero_on[] = { 0x00, 0x06, 0x01, 0x8b, 0x00, 0x01 };
 	uint8_t cmd_zero_off[] = { 0x00, 0x06, 0x01, 0x8b, 0x00, 0x00 };
@@ -265,7 +265,7 @@ void ctm_mpt::CtmMpt::mtrZero(const uint8_t id)
 	return;
 }
 
-void ctm_mpt::CtmMpt::mtrZero(const uint8_t* id, const size_t n)
+void CtmMpt::mtrZero(const uint8_t* id, const size_t n)
 {
 	uint8_t cmd_zero_on[] = { 0x00, 0x06, 0x01, 0x8b, 0x00, 0x01 };
 	uint8_t cmd_zero_off[] = { 0x00, 0x06, 0x01, 0x8b, 0x00, 0x00 };
@@ -293,7 +293,7 @@ void ctm_mpt::CtmMpt::mtrZero(const uint8_t* id, const size_t n)
 	return;
 }
 
-void ctm_mpt::CtmMpt::mtrSetPosAbs(const uint8_t id,
+void CtmMpt::mtrSetPosAbs(const uint8_t id,
 								   const int32_t pos, const int32_t vel,
 								   const uint32_t k_i, const uint32_t k_f,
 								   const std::string mode)
@@ -339,7 +339,7 @@ void ctm_mpt::CtmMpt::mtrSetPosAbs(const uint8_t id,
 	return;
 }
 
-void ctm_mpt::CtmMpt::mtrSetPosRel(const uint8_t id,
+void CtmMpt::mtrSetPosRel(const uint8_t id,
 								   const int32_t pos, const int32_t vel,
 								   const uint32_t k_i, const uint32_t k_f,
 								   const std::string mode)
@@ -385,7 +385,7 @@ void ctm_mpt::CtmMpt::mtrSetPosRel(const uint8_t id,
 	return;
 }
 
-void ctm_mpt::CtmMpt::mtrGetPos(const uint8_t id)
+void CtmMpt::mtrGetPos(const uint8_t id)
 {
 	uint8_t cmd_read_pos[] = { 0x00, 0x03, 0x00, 0xc6, 0x00, 0x02 };
 	size_t bytes_read = 0;
@@ -408,7 +408,7 @@ void ctm_mpt::CtmMpt::mtrGetPos(const uint8_t id)
 	return;
 }
 
-void ctm_mpt::CtmMpt::mtrGetPos(const uint8_t* id, const size_t n)
+void CtmMpt::mtrGetPos(const uint8_t* id, const size_t n)
 {
 	size_t k = 0;
 
@@ -420,7 +420,7 @@ void ctm_mpt::CtmMpt::mtrGetPos(const uint8_t* id, const size_t n)
 	return;
 }
 
-void ctm_mpt::CtmMpt::mtrSetVel(const uint8_t id,
+void CtmMpt::mtrSetVel(const uint8_t id,
 								const int32_t vel, const float dur,
 								const uint32_t k_i, const uint32_t k_f)
 {
@@ -450,7 +450,7 @@ void ctm_mpt::CtmMpt::mtrSetVel(const uint8_t id,
 	return;
 }
 
-void ctm_mpt::CtmMpt::mtrGetVel(const uint8_t id)
+void CtmMpt::mtrGetVel(const uint8_t id)
 {
 	uint8_t cmd_read_vel[] = { 0x00, 0x03, 0x00, 0xc8, 0x00, 0x04 };
 	size_t bytes_read = 0;
@@ -474,7 +474,7 @@ void ctm_mpt::CtmMpt::mtrGetVel(const uint8_t id)
 	return;
 }
 
-void ctm_mpt::CtmMpt::mtrGetVel(const uint8_t* id, const size_t n)
+void CtmMpt::mtrGetVel(const uint8_t* id, const size_t n)
 {
 	size_t k = 0;
 
@@ -486,7 +486,7 @@ void ctm_mpt::CtmMpt::mtrGetVel(const uint8_t* id, const size_t n)
 	return;
 }
 
-void ctm_mpt::CtmMpt::mtrGetTemp(const uint8_t id)
+void CtmMpt::mtrGetTemp(const uint8_t id)
 {
 	uint8_t cmd_read_temp[] = { 0x00, 0x03, 0x00, 0xf8, 0x00, 0x04 };
 	size_t bytes_read = 0;
@@ -510,7 +510,7 @@ void ctm_mpt::CtmMpt::mtrGetTemp(const uint8_t id)
 	return;
 }
 
-void ctm_mpt::CtmMpt::mtrGetTemp(const uint8_t* id, const size_t n)
+void CtmMpt::mtrGetTemp(const uint8_t* id, const size_t n)
 {
 	size_t k = 0;
 
@@ -522,7 +522,7 @@ void ctm_mpt::CtmMpt::mtrGetTemp(const uint8_t* id, const size_t n)
 	return;
 }
 
-void ctm_mpt::CtmMpt::mtrGetVolt(const uint8_t id)
+void CtmMpt::mtrGetVolt(const uint8_t id)
 {
 	uint8_t cmd_read_temp[] = { 0x00, 0x03, 0x01, 0x46, 0x00, 0x04 };
 	size_t bytes_read = 0;
@@ -546,7 +546,7 @@ void ctm_mpt::CtmMpt::mtrGetVolt(const uint8_t id)
 	return;
 }
 
-void ctm_mpt::CtmMpt::mtrGetVolt(const uint8_t* id, const size_t n)
+void CtmMpt::mtrGetVolt(const uint8_t* id, const size_t n)
 {
 	size_t k = 0;
 
@@ -558,7 +558,7 @@ void ctm_mpt::CtmMpt::mtrGetVolt(const uint8_t* id, const size_t n)
 	return;
 }
 
-void ctm_mpt::CtmMpt::snsrInit(void)
+void CtmMpt::snsrInit(void)
 {
 	std::string cmd_stop_gsd("AT+GSD=STOP");
 	std::string cmd_paras("AT+UARTCFG=115200,8,1.00,N");
@@ -574,7 +574,7 @@ void ctm_mpt::CtmMpt::snsrInit(void)
 	return;
 }
 
-void ctm_mpt::CtmMpt::snsrRead(float* dst)
+void CtmMpt::snsrRead(float* dst)
 {
 	std::string cmd_read("AT+GOD");
 	size_t bytes_read = 0;
@@ -618,7 +618,7 @@ void ctm_mpt::CtmMpt::snsrRead(float* dst)
 	return;
 }
 
-void ctm_mpt::CtmMpt::snsrGetCfg(void)
+void CtmMpt::snsrGetCfg(void)
 {
 	std::string cmd_read_paras("AT+UARTCFG=?");
 	std::string cmd_read_smpf("AT+SMPF=?");
@@ -655,7 +655,7 @@ void ctm_mpt::CtmMpt::snsrGetCfg(void)
 	return;
 }
 
-void ctm_mpt::CtmMpt::snsrGetMat(void)
+void CtmMpt::snsrGetMat(void)
 {
 	std::string cmd_read_mat("AT+DCPM=?");
 	std::string rsp_1, rsp_2;
@@ -686,7 +686,7 @@ void ctm_mpt::CtmMpt::snsrGetMat(void)
 	return;
 }
 
-void ctm_mpt::CtmMpt::mtrWrite_(const uint8_t* cmd, const size_t len)
+void CtmMpt::mtrWrite_(const uint8_t* cmd, const size_t len)
 {
 	uint8_t* new_cmd = new uint8_t[len + 2]; // Create a new array.
 	size_t bytes_wrote = 0, bytes_read = 0;
@@ -717,7 +717,7 @@ void ctm_mpt::CtmMpt::mtrWrite_(const uint8_t* cmd, const size_t len)
 	return;
 }
 
-void ctm_mpt::CtmMpt::snsrWrite_(const std::string& cmd)
+void CtmMpt::snsrWrite_(const std::string& cmd)
 {
 	std::string new_cmd(cmd + "\r\n");
 	size_t k = 0, bytes_wrote = 0, bytes_read = 0;
@@ -765,7 +765,7 @@ void ctm_mpt::CtmMpt::snsrWrite_(const std::string& cmd)
 	return;
 }
 
-bool ctm_mpt::CtmMpt::mtrAtPos_(const uint8_t id)
+bool CtmMpt::mtrAtPos_(const uint8_t id)
 {
 	bool at_pos = false;
 	uint8_t BIT_AT_POS = 0x40;
@@ -781,7 +781,7 @@ bool ctm_mpt::CtmMpt::mtrAtPos_(const uint8_t id)
 	return at_pos;
 }
 
-bool ctm_mpt::CtmMpt::mtrAtHome_(const uint8_t id)
+bool CtmMpt::mtrAtHome_(const uint8_t id)
 {
 	bool at_home = false;
 	uint8_t BIT_AT_HOME = 0x10;
@@ -797,7 +797,7 @@ bool ctm_mpt::CtmMpt::mtrAtHome_(const uint8_t id)
 	return at_home;
 }
 
-void ctm_mpt::CtmMpt::snsrInfoAnalyse_(const uint8_t* data, const std::string prefix, float* dst, const size_t n)
+void CtmMpt::snsrInfoAnalyse_(const uint8_t* data, const std::string prefix, float* dst, const size_t n)
 {	
 	uint16_t pkg_len = 0;
 	uint16_t pkg_num = 0;
