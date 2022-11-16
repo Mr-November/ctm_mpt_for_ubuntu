@@ -3,33 +3,20 @@
 #include <sensor_msgs/JointState.h>
 #include <string>
 #include <fstream>
-#include <unistd.h>
 
 void proc(size_t cur, size_t tot);
 
 int main(int argc, char** argv)
 {
-	// char* wd = getcwd(NULL, 0);
-	// ROS_INFO_STREAM("Working directory: \"" << wd << "\".");
-	// free(wd);
-
-	ros::init(argc, argv, "virtual_controller");
+	ros::init(argc, argv, "vrt_cntlr");
 	ros::NodeHandle nh;
 
-	// ros::Publisher pos_pub = nh.advertise<std_msgs::Int32MultiArray>("jnt_pos", 1000);
-	// std_msgs::Int32MultiArray msg;
-    // std_msgs::MultiArrayDimension dim;
-    // dim.label = "ang";
-    // dim.size = 18;
-    // dim.stride = 18;
-    // msg.layout.dim.push_back(dim);
-    // msg.layout.data_offset = 0;
-    // msg.data = std::vector<int32_t>(18, 0);
+	const size_t N = 18;
 
 	ros::Publisher jnt_pub = nh.advertise<sensor_msgs::JointState>("joint_states", 1000);
 	sensor_msgs::JointState joint_state;
-	joint_state.position.resize(18);
-	joint_state.name.resize(18);
+	joint_state.position.resize(N);
+	joint_state.name.resize(N);
 	joint_state.name[0]="BJ1";
 	joint_state.name[1]="J1S1";
 	joint_state.name[2]="S1J2";
@@ -53,14 +40,14 @@ int main(int argc, char** argv)
 	ros::Duration(4).sleep(); // Wait for RViz to open.
 	while (ros::ok())
 	{
-		std::string fn("/home/ellipse/Desktop/catkin_ws/src/ctm_mpt/ctm_mpt_kernal/src/q.txt");
+		std::string fn("/home/ellipse/Desktop/catkin_ws/src/ctm_mpt/ctm_mpt_kernal/src/fq.txt");
 		std::ifstream fin(fn);
 		std::string str_ang;
 		std::string str_tot;
 		size_t tot = 0;
 		size_t cur = 0;
 		size_t i = 0;
-		float fwd[18] = {0.0};
+		float fwd[N] = {0.0};
 		
 		if (!fin.is_open())
 		{
@@ -74,15 +61,13 @@ int main(int argc, char** argv)
 
 		while (cur < tot)
 		{
-			for (i = 0; i < 18; i++)
+			for (i = 0; i < N; i++)
 			{
 				fin >> str_ang;
 				fwd[i] = std::stof(str_ang);
-				// msg.data.at(i) = fwd[i];
 				joint_state.position[i] = fwd[i];
 			}
 			joint_state.header.stamp = ros::Time::now();
-			// pos_pub.publish(msg);
 			jnt_pub.publish(joint_state);
 			cur += 1;
 			proc(cur, tot);
@@ -124,4 +109,6 @@ void proc(size_t cur, size_t tot)
 	}
 	sprintf(suffix, "]%6.2f%% (%d/%d)", per*100, cur, tot);
 	ROS_INFO_STREAM(info << suffix);
+
+	return;
 }

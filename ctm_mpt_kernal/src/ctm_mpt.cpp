@@ -123,16 +123,42 @@ CtmMpt::~CtmMpt()
 	return;
 }
 
+void CtmMpt::mtrDebug(void)
+{
+	// Read register.
+	uint8_t cmd_read_reg[] = { 0x01, 0x03, 0x0f, 0xe4, 0x00, 0x02 };
+	size_t bytes_read = 0;
+	uint16_t n_reg_to_read_for_0x03 = 0;
+	uint8_t rsp[64] = {};
+
+	this->mtrWrite_(cmd_read_reg, 6);
+
+	utils::loadUint8ArrayToUint16(cmd_read_reg + 4, &n_reg_to_read_for_0x03);
+	bytes_read = this->mtr_serial_.read(rsp, 5 + 2 * n_reg_to_read_for_0x03);
+
+	printf("Bytes read from motors: %d.\n", bytes_read);
+	utils::dispUint8Array(rsp, bytes_read, "Full response: ");
+
+
+
+	// // Write register.
+	// uint8_t cmd_write_reg[] = { 0x02, 0x06, 0x03, 0x93, 0x00, 0x06 };
+
+	// this->mtrWrite_(cmd_write_reg, 6);
+
+	return;
+}
+
 void CtmMpt::mtrInit(const uint8_t id)
 {
 	uint8_t cmd_reso[] = { 0x00, 0x10, 0x03, 0x80, 0x00, 0x04, 0x08,
 						   0x00, 0x00, 0x00, 0x01, // Electronic gear A = 1.
-						   0x00, 0x00, 0x00, 0x01 }; // Electronic gear B = 1, resolution = 30,000Hz.
+						   0x00, 0x00, 0x00, 0x01 }; // Electronic gear B = 1.
 	uint8_t cmd_rst_paras[] = { 0x00, 0x10, 0x02, 0xb0, 0x00, 0x06, 0x0c,
-								0x00, 0x00, 0x13, 0x88, // Operation speed = 5000Hz.
-								0x00, 0x00, 0x07, 0xd0, // Acceleration = 2000Hz.
+								0x00, 0x00, 0x13, 0x88, // Operation speed = 5kHz.
+								0x00, 0x00, 0x13, 0x88, // Acceleration = 5kHz.
 								0x00, 0x00, 0x00, 0x00 }; // Starting speed = 0Hz.
-
+	
 	cmd_reso[0] = id;
 	cmd_rst_paras[0] = id;
 
@@ -152,8 +178,8 @@ void CtmMpt::mtrInit(const uint8_t* id, const size_t n)
 						   0x00, 0x00, 0x00, 0x01 }; // Electronic gear B = 1.
 						   						     // Resolution = A / B * 1000 * FC?UA * (Reducer)80 Hz.
 	uint8_t cmd_rst_paras[] = { 0x00, 0x10, 0x02, 0xb0, 0x00, 0x06, 0x0c,
-								0x00, 0x00, 0x13, 0x88, // Operation speed = 5000Hz.
-								0x00, 0x00, 0x07, 0xd0, // Acceleration = 2000Hz.
+								0x00, 0x00, 0x13, 0x88, // Operation speed = 5kHz.
+								0x00, 0x00, 0x13, 0x88, // Acceleration = 5kHz.
 								0x00, 0x00, 0x00, 0x00 }; // Starting speed = 0Hz.
 	size_t k = 0;
 
@@ -174,7 +200,7 @@ void CtmMpt::mtrInit(const uint8_t* id, const size_t n)
 
 void CtmMpt::mtrReset(const uint8_t id)
 {
-	uint8_t cmd_rst[] = { 0x00, 0x06, 0x00, 0x7d, 0x00, 0x10 };
+	uint8_t cmd_rst[] = { 0x00, 0x06, 0x00, 0x7d, 0x00, 0x10 }; // ZHOME operation.
 
 	cmd_rst[0] = id;
 	this->mtrWrite_(cmd_rst, 6);
@@ -293,10 +319,11 @@ void CtmMpt::mtrZero(const uint8_t* id, const size_t n)
 	return;
 }
 
+// Not recommended. Because wrap setting is enabled, with \pm 900 rev (900,000 step).
 void CtmMpt::mtrSetPosAbs(const uint8_t id,
-								   const int32_t pos, const int32_t vel,
-								   const uint32_t k_i, const uint32_t k_f,
-								   const std::string mode)
+							const int32_t pos, const int32_t vel,
+							const uint32_t k_i, const uint32_t k_f,
+							const std::string mode)
 {
 	uint8_t cmd_pos_paras[] = { 0x00, 0x10, 0x18, 0x00, 0x00, 0x0a, 0x14,
 								0x00, 0x00, 0x00, 0x01, // Absolute positioning.
@@ -340,9 +367,9 @@ void CtmMpt::mtrSetPosAbs(const uint8_t id,
 }
 
 void CtmMpt::mtrSetPosRel(const uint8_t id,
-								   const int32_t pos, const int32_t vel,
-								   const uint32_t k_i, const uint32_t k_f,
-								   const std::string mode)
+							const int32_t pos, const int32_t vel,
+							const uint32_t k_i, const uint32_t k_f,
+							const std::string mode)
 {
 	uint8_t cmd_pos_paras[] = { 0x00, 0x10, 0x18, 0x00, 0x00, 0x0a, 0x14,
 								0x00, 0x00, 0x00, 0x02, // Incremental positioning (based on command position).
@@ -385,12 +412,11 @@ void CtmMpt::mtrSetPosRel(const uint8_t id,
 	return;
 }
 
-void CtmMpt::mtrGetPos(const uint8_t id)
+void CtmMpt::mtrGetPos(const uint8_t id, int32_t* pos)
 {
 	uint8_t cmd_read_pos[] = { 0x00, 0x03, 0x00, 0xc6, 0x00, 0x02 };
 	size_t bytes_read = 0;
 	uint8_t rsp[9] = {};
-	int32_t pos = 0;
 
 	cmd_read_pos[0] = id;
 	this->mtrWrite_(cmd_read_pos, 6);
@@ -402,23 +428,23 @@ void CtmMpt::mtrGetPos(const uint8_t id)
 		utils::dispUint8Array(rsp, bytes_read, "Full response: ");
 	}
 	
-	utils::loadUint8ArrayToInt32(rsp + 3, &pos);
-	ROS_INFO("(id %d) Stays in %d (step).\n", id, pos);
+	utils::loadUint8ArrayToInt32(rsp + 3, pos);
+	// ROS_INFO("(id %d) Stays in %d (step).\n", id, pos);
 
 	return;
 }
 
-void CtmMpt::mtrGetPos(const uint8_t* id, const size_t n)
-{
-	size_t k = 0;
+// void CtmMpt::mtrGetPos(const uint8_t* id, const size_t n)
+// {
+// 	size_t k = 0;
 
-	for (k = 0; k < n; k++)
-	{
-		this->mtrGetPos(id[k]);
-	}
+// 	for (k = 0; k < n; k++)
+// 	{
+// 		this->mtrGetPos(id[k]);
+// 	}
 
-	return;
-}
+// 	return;
+// }
 
 void CtmMpt::mtrSetVel(const uint8_t id,
 								const int32_t vel, const float dur,
@@ -450,12 +476,11 @@ void CtmMpt::mtrSetVel(const uint8_t id,
 	return;
 }
 
-void CtmMpt::mtrGetVel(const uint8_t id)
+void CtmMpt::mtrGetVel(const uint8_t id, int32_t* vel_in_rpm, int32_t* vel_in_hz)
 {
 	uint8_t cmd_read_vel[] = { 0x00, 0x03, 0x00, 0xc8, 0x00, 0x04 };
 	size_t bytes_read = 0;
 	uint8_t rsp[13] = {};
-	int32_t vel_in_rpm = 0, vel_in_hz = 0;
 
 	cmd_read_vel[0] = id;
 	this->mtrWrite_(cmd_read_vel, 6);
@@ -467,31 +492,30 @@ void CtmMpt::mtrGetVel(const uint8_t id)
 		utils::dispUint8Array(rsp, bytes_read, "Full response: ");
 	}
 
-	utils::loadUint8ArrayToInt32(rsp + 3, &vel_in_rpm);
-	utils::loadUint8ArrayToInt32(rsp + 7, &vel_in_hz);
-	ROS_INFO("(id %d) Travels at %d (rpm), or %d (Hz).\n", id, vel_in_rpm, vel_in_hz);
+	utils::loadUint8ArrayToInt32(rsp + 3, vel_in_rpm);
+	utils::loadUint8ArrayToInt32(rsp + 7, vel_in_hz);
+	// ROS_INFO("(id %d) Travels at %d (rpm), or %d (Hz).\n", id, vel_in_rpm, vel_in_hz);
 
 	return;
 }
 
-void CtmMpt::mtrGetVel(const uint8_t* id, const size_t n)
-{
-	size_t k = 0;
+// void CtmMpt::mtrGetVel(const uint8_t* id, const size_t n)
+// {
+// 	size_t k = 0;
 
-	for (k = 0; k < n; k++)
-	{
-		this->mtrGetVel(id[k]);
-	}
+// 	for (k = 0; k < n; k++)
+// 	{
+// 		this->mtrGetVel(id[k]);
+// 	}
 
-	return;
-}
+// 	return;
+// }
 
-void CtmMpt::mtrGetTemp(const uint8_t id)
+void CtmMpt::mtrGetTemp(const uint8_t id, int32_t* drv_temp, int32_t* mtr_temp)
 {
 	uint8_t cmd_read_temp[] = { 0x00, 0x03, 0x00, 0xf8, 0x00, 0x04 };
 	size_t bytes_read = 0;
 	uint8_t rsp[13] = {};
-	int32_t drv_temp = 0, mtr_temp = 0;
 
 	cmd_read_temp[0] = id;
 	this->mtrWrite_(cmd_read_temp, 6);
@@ -503,31 +527,30 @@ void CtmMpt::mtrGetTemp(const uint8_t id)
 		utils::dispUint8Array(rsp, bytes_read, "Full response: ");
 	}
 
-	utils::loadUint8ArrayToInt32(rsp + 3, &drv_temp);
-	utils::loadUint8ArrayToInt32(rsp + 7, &mtr_temp);
-	ROS_INFO("(id %d) Driver %.1f degs Celsius, motor %.1f degs Celsius.\n", id, drv_temp * 0.1, mtr_temp * 0.1);
+	utils::loadUint8ArrayToInt32(rsp + 3, drv_temp);
+	utils::loadUint8ArrayToInt32(rsp + 7, mtr_temp);
+	// ROS_INFO("(id %d) Driver %.1f degs Celsius, motor %.1f degs Celsius.\n", id, drv_temp * 0.1, mtr_temp * 0.1);
 
 	return;
 }
 
-void CtmMpt::mtrGetTemp(const uint8_t* id, const size_t n)
-{
-	size_t k = 0;
+// void CtmMpt::mtrGetTemp(const uint8_t* id, const size_t n)
+// {
+// 	size_t k = 0;
 
-	for (k = 0; k < n; k++)
-	{
-		this->mtrGetTemp(id[k]);
-	}
+// 	for (k = 0; k < n; k++)
+// 	{
+// 		this->mtrGetTemp(id[k]);
+// 	}
 
-	return;
-}
+// 	return;
+// }
 
-void CtmMpt::mtrGetVolt(const uint8_t id)
+void CtmMpt::mtrGetVolt(const uint8_t id, int32_t* inv_volt, int32_t* pwr_volt)
 {
 	uint8_t cmd_read_temp[] = { 0x00, 0x03, 0x01, 0x46, 0x00, 0x04 };
 	size_t bytes_read = 0;
 	uint8_t rsp[13] = {};
-	int32_t inv_volt = 0, pwr_volt = 0;
 
 	cmd_read_temp[0] = id;
 	this->mtrWrite_(cmd_read_temp, 6);
@@ -539,24 +562,24 @@ void CtmMpt::mtrGetVolt(const uint8_t id)
 		utils::dispUint8Array(rsp, bytes_read, "Full response: ");
 	}
 
-	utils::loadUint8ArrayToInt32(rsp + 3, &inv_volt);
-	utils::loadUint8ArrayToInt32(rsp + 7, &pwr_volt);
-	ROS_INFO("(id %d) Main power %.1f V, inverter %.1f V.\n", id, inv_volt * 0.1, pwr_volt * 0.1);
+	utils::loadUint8ArrayToInt32(rsp + 3, inv_volt);
+	utils::loadUint8ArrayToInt32(rsp + 7, pwr_volt);
+	// ROS_INFO("(id %d) Power supply %.1f V, inverter %.1f V.\n", id, inv_volt * 0.1, pwr_volt * 0.1);
 
 	return;
 }
 
-void CtmMpt::mtrGetVolt(const uint8_t* id, const size_t n)
-{
-	size_t k = 0;
+// void CtmMpt::mtrGetVolt(const uint8_t* id, const size_t n)
+// {
+// 	size_t k = 0;
 
-	for (k = 0; k < n; k++)
-	{
-		this->mtrGetVolt(id[k]);
-	}
+// 	for (k = 0; k < n; k++)
+// 	{
+// 		this->mtrGetVolt(id[k]);
+// 	}
 
-	return;
-}
+// 	return;
+// }
 
 void CtmMpt::snsrInit(void)
 {
@@ -690,6 +713,7 @@ void CtmMpt::mtrWrite_(const uint8_t* cmd, const size_t len)
 {
 	uint8_t* new_cmd = new uint8_t[len + 2]; // Create a new array.
 	size_t bytes_wrote = 0, bytes_read = 0;
+	// uint16_t n_reg_to_read_for_0x03 = 0;
 	uint8_t rsp[64] = {};
 
 	// Add crc16 correct codes.
@@ -697,10 +721,11 @@ void CtmMpt::mtrWrite_(const uint8_t* cmd, const size_t len)
 
 	// Write to motors.
 	bytes_wrote = this->mtr_serial_.write(new_cmd, len + 2);
-	// If the command is not to read the motor registers.
+	
 	if (new_cmd[1] != 0x03)
 	{
 		bytes_read = this->mtr_serial_.read(rsp, 8);
+
 		if (this->gossip_)
 		{
 			printf("Bytes wrote to motors: %d.\n", bytes_wrote);
@@ -710,6 +735,20 @@ void CtmMpt::mtrWrite_(const uint8_t* cmd, const size_t len)
 			utils::dispUint8Array(rsp, bytes_read, "Full response: ");
 		}
 	}
+	// else
+	// {
+	// 	utils::loadUint8ArrayToUint16(cmd + 4, &n_reg_to_read_for_0x03);
+	// 	bytes_read = this->mtr_serial_.read(rsp, 5 + 2 * n_reg_to_read_for_0x03);
+
+	// 	if (this->gossip_)
+	// 	{
+	// 		printf("Bytes wrote to motors: %d.\n", bytes_wrote);
+	// 		utils::dispUint8Array(new_cmd, len + 2, "Full command: ");
+		
+	// 		printf("Bytes read from motors: %d.\n", bytes_read);
+	// 		utils::dispUint8Array(rsp, bytes_read, "Full response: ");
+	// 	}
+	// }
 
 	// Delete the new array.
 	delete[] new_cmd;

@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.0.2)
 project(ctm_mpt_kernal)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
-# add_compile_options(-std=c++11)
+add_compile_options(-std=c++11)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -133,9 +133,10 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(virtual_controller_node src/virtual_controller_main.cpp)
-add_executable(motor_controller_node src/motor_controller_main.cpp src/ctm_mpt.cpp src/ctm_mpt2.cpp src/utils.cpp)
-add_executable(torque_monitor_node src/torque_monitor_main.cpp src/ctm_mpt.cpp src/ctm_mpt2.cpp src/utils.cpp)
+add_executable(vrt_cntlr_node src/vrt_cntlr_main.cpp)
+add_executable(overload_protection_node src/overload_protection.cpp src/ctm_mpt.cpp src/ctm_mpt2.cpp src/utils.cpp)
+add_executable(mtr_cntlr_node src/mtr_cntlr_main.cpp src/ctm_mpt.cpp src/ctm_mpt2.cpp src/utils.cpp)
+add_executable(trq_cntlr_node src/trq_cntlr_main.cpp src/ctm_mpt.cpp src/ctm_mpt2.cpp src/utils.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -148,13 +149,16 @@ add_executable(torque_monitor_node src/torque_monitor_main.cpp src/ctm_mpt.cpp s
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(virtual_controller_node
+target_link_libraries(vrt_cntlr_node
   ${catkin_LIBRARIES}
 )
-target_link_libraries(motor_controller_node
+target_link_libraries(overload_protection_node
   ${catkin_LIBRARIES}
 )
-target_link_libraries(torque_monitor_node
+target_link_libraries(mtr_cntlr_node
+  ${catkin_LIBRARIES}
+)
+target_link_libraries(trq_cntlr_node
   ${catkin_LIBRARIES}
 )
 
