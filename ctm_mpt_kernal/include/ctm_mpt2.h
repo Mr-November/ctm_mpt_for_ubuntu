@@ -50,7 +50,7 @@ private:
 
     const size_t N_SEG = 3;
 
-    const float TRQ_PERMITTED[9] = {10, 10, 10, 10, 10, 10, 10, 10, 10};
+    const float TRQ_PERMITTED[9] = {5, 5, 5, 5, 5, 5, 5, 5, 5};
 
     const float TRQ_OFFSET[9] = {-0.3145, -0.7898, -0.3423,
                                  -0.2071, -0.7468, -0.5819,
@@ -62,13 +62,24 @@ private:
     const float RESOLUTION[9] = {20000/3, 20000/3, 20000/3,
                                  20000/9, 20000/9, 20000/9,
                                  20000/9, 20000/9, 20000/9};
+
+    // Velocities and accelerations.
+    const int32_t VEL[9] = {12000, 12000, 12000,
+                             4000,  4000,  4000,
+                             4000,  4000,  4000};
+    
+    const uint32_t KI[9] = {12000, 12000, 12000,
+                             4000,  4000,  4000,
+                             4000,  4000,  4000};
+    
+    const uint32_t KF[9] = {12000, 12000, 12000,
+                             4000,  4000,  4000,
+                             4000,  4000,  4000};
 };
 
 class CntlrPID
 {
 public:
-    CntlrPID();
-
     CntlrPID(float kp, float ki, float kd, float dt, size_t n);
 
     ~CntlrPID();

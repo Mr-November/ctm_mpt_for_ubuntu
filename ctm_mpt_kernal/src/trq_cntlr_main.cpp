@@ -19,39 +19,43 @@ int main(int argc, char** argv)
     CtmMpt2 m("/dev/ttyUSB1", "/dev/ttyUSB2", "/dev/ttyUSB0");
 
     const size_t N = 9;
-    CntlrPID c(10, 0, 0, 0.02, N);
+    CntlrPID c(1, 0, 0, 0.02, N);
 
     float trq[N] = {0.0};
-    float trq_expt[N] = {0.0};
+    float trq_expt[N] = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
     float trq_diff_mult_1k[N] = {0.0};
     float pid_out[N] = {0.0};
-    size_t i = 0;
 
-    // m.init();
+    m.print();
+    m.init();
     m.print();
     // float dist[] = {-30, -20, -10, -60, -50, -40, -90, -80, -70};
     // m.move(dist);
 
-    ros::Rate loop_rate(50);
-    while (ros::ok())
-    {
-        m.read(trq);
+    // ros::Rate loop_rate(50);
+    // while (ros::ok())
+    // {
+    //     size_t i = 0; // 2022.12.12
+    //
+    //     m.read(trq);
 
-        while (i < N)
-        {
-            // // For single motor pid debugging, use
-            // uint8_t id = 1;
-            // trq_diff_mult_1k[id-1] = 1000 * (trq_expt[id-1] - trq[id-1]);
-            // // For multiple, use
-            trq_diff_mult_1k[i] = 1000*(trq_expt[i] - trq[i]);
-            i++;
-        }
+    //     while (i < N)
+    //     {
+    //         // // For single motor pid debugging, use
+    //         // uint8_t id = 1;
+    //         // trq_diff_mult_1k[id-1] = 1000 * (trq_expt[id-1] - trq[id-1]);
+    //         // // For multiple, use
+    //         trq_diff_mult_1k[i] = (trq_expt[i] - trq[i]);
+    //         i++;
+    //     }
         
-        // c.pid(trq_diff_mult_1k, pid_out);
-        // m.move(pid_out);
+    //     c.pid(trq_diff_mult_1k, pid_out);
+    //     // When tuning a PID, print the control signal first.
+    //     // Check if the values are abnormal before continue.
+    //     // m.move(pid_out);
 
-        loop_rate.sleep();
-    }
+    //     loop_rate.sleep();
+    // }
 
     return 0;
 }

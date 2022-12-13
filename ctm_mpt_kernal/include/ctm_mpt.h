@@ -43,13 +43,13 @@ public:
 	// Set motor position.
 	// Not recommended. Because wrap setting is enabled, with \pm 900 rev.
 	void mtrSetPosAbs(const uint8_t id,
-						const int32_t pos, const int32_t vel = 10000,
-						const uint32_t k_i = 20000, const uint32_t k_f = 20000,
+						const int32_t pos, const int32_t vel = 1000,
+						const uint32_t k_i = 500, const uint32_t k_f = 500,
 						const std::string mode = "EXIT_DIRECTLY");
 
 	void mtrSetPosRel(const uint8_t id,
-						const int32_t pos, const int32_t vel = 10000,
-						const uint32_t k_i = 20000, const uint32_t k_f = 20000,
+						const int32_t pos, const int32_t vel = 1000,
+						const uint32_t k_i = 500, const uint32_t k_f = 500,
 						const std::string mode = "EXIT_DIRECTLY");
 
 	// Get command position.
@@ -58,7 +58,7 @@ public:
 	// Set motor velocity.
 	void mtrSetVel(const uint8_t id,
 					const int32_t vel, float dur,
-					const uint32_t k_i = 20000, const uint32_t k_f = 20000);
+					const uint32_t k_i = 1000, const uint32_t k_f = 1000);
 
 	void mtrSetVel(const uint8_t* id,
 					const int32_t* vel, float* dur,

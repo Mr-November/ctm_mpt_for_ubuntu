@@ -110,6 +110,13 @@ bool CtmMpt2::read(float* trq)
         k++;
 	}
 
+    if (load)
+    {
+        this->stop();
+        this->reset();
+        ROS_ERROR("Overload protection completed. Be careful!");
+    }
+
     return load;
 }
 
@@ -146,11 +153,6 @@ void CtmMpt2::zero(void)
     ROS_INFO_STREAM("ZERO.\n");
 
     return;
-}
-
-bool cmp(int16_t a, int16_t b)
-{
-    return a < b;
 }
 
 void CtmMpt2::move(float* dist)
@@ -192,7 +194,8 @@ void CtmMpt2::move(float* dist)
     {
         idx = idcs[i++];
         this->mtrSetPosRel(this->ID_ALL[idx], dist[idx] * this->RESOLUTION[idx],
-                            20000, 40000, 40000, "EXIT_DIRECTLY");
+                            this->VEL[idx], this->KI[idx], this->KF[idx],
+                            "EXIT_DIRECTLY");
     }
 
 	while (!all_at_pos)
