@@ -71,8 +71,8 @@ int main(int argc, char** argv)
 			jnt_pub.publish(joint_state);
 			cur += 1;
 			proc(cur, tot);
-			// std::getchar(); // For debug only.
-			loop_rate.sleep();
+			std::getchar(); // For debug only.
+			// loop_rate.sleep();
 		}
 		fin.clear();
 		fin.close();

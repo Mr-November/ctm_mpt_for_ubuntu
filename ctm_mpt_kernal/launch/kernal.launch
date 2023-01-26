@@ -1,7 +1,8 @@
 <launch>
     <group ns="ctm_mpt">
-        <!-- These three pkg are bound together. -->
-        <!-- <param name="robot_description"
+        <!-- Virtual controller. -->
+        <!-- These three pkgs are bound together. -->
+        <param name="robot_description"
                 command="$(find xacro)/xacro '$(find ctm_mpt_image)/urdf/ctm_mpt.xacro'" />
         <node pkg="robot_state_publisher"
                 type="robot_state_publisher"
@@ -15,9 +16,7 @@
         <node pkg="ctm_mpt_kernal"
                 type="vrt_cntlr_node"
                 name="virtual_controller"
-                output="screen"/> -->
-
-        <!-- Stop motors when overloaded. -->
+                output="screen"/>
         
         <!-- Motor controller. -->
         <!-- <node pkg="ctm_mpt_kernal"
@@ -32,10 +31,10 @@
                 output="screen"/> -->
 
         <!-- Test. -->
-        <node pkg="ctm_mpt_kernal"
+        <!-- <node pkg="ctm_mpt_kernal"
                 type="test_node"
                 name="test_node"
-                output="screen"/>
+                output="screen"/> -->
         
         <!-- Plot torque curve. -->
         <node pkg="rqt_gui"

@@ -20,11 +20,11 @@ CtmMpt::CtmMpt(const std::string& port_name)
 {
 	if ( this->mtr_serial_.isOpen() )
 	{
-		ROS_INFO("The serial port of motors is opened.\n");
+		ROS_INFO("Open the motor port.\n");
 	}
 	else
 	{
-		ROS_WARN("Cannot open the serial port of motors.\n");
+		ROS_WARN("Cannot open the motor port.\n");
 	}
 
 	return;
@@ -47,20 +47,20 @@ CtmMpt::CtmMpt(const std::string& snsr_port_1,
 {
 	if ( this->snsr_serial_1_.isOpen() )
 	{
-		ROS_INFO("The first serial port of sensors is opened.\n");
+		ROS_INFO("Open the first sensor port.\n");
 	}
 	else
 	{
-		ROS_WARN("Cannot open the first serial port of sensors.\n");
+		ROS_WARN("Cannot open the first sensor port.\n");
 	}
 
 	if ( this->snsr_serial_2_.isOpen() )
 	{
-		ROS_INFO("The second serial port of sensors is opened.\n");
+		ROS_INFO("Open the second sensor port.\n");
 	}
 	else
 	{
-		ROS_WARN("Cannot open the second serial port of sensors.\n");
+		ROS_WARN("Cannot open the second sensor port.\n");
 	}
 
 	return;
@@ -90,29 +90,29 @@ CtmMpt::CtmMpt(const std::string& snsr_port_1,
 {
 	if ( this->snsr_serial_1_.isOpen() )
 	{
-		ROS_INFO("The first serial port of sensors is opened.\n");
+		ROS_INFO("Open the first sensor port.\n");
 	}
 	else
 	{
-		ROS_WARN("Cannot open the first serial port of sensors.\n");
+		ROS_WARN("Cannot open the first sensor port.\n");
 	}
 
 	if ( this->snsr_serial_2_.isOpen() )
 	{
-		ROS_INFO("The second serial port of sensors is opened.\n");
+		ROS_INFO("Open the second sensor port.\n");
 	}
 	else
 	{
-		ROS_WARN("Cannot open the second serial port of sensors.\n");
+		ROS_WARN("Cannot open the second sensor port.\n");
 	}
 
 	if ( this->mtr_serial_.isOpen() )
 	{
-		ROS_INFO("The serial port of motors is opened.\n");
+		ROS_INFO("Open the motor port.\n");
 	}
 	else
 	{
-		ROS_WARN("Cannot open the serial port of motors.\n");
+		ROS_WARN("Cannot open the motor port.\n");
 	}
 
 	return;

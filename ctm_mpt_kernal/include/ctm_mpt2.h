@@ -50,7 +50,7 @@ private:
 
     const size_t N_SEG = 3;
 
-    const float TRQ_PERMITTED[9] = {5, 5, 5, 5, 5, 5, 5, 5, 5};
+    const float TRQ_PERMITTED[9] = {3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0};
 
     const float TRQ_OFFSET[9] = {-0.3145, -0.7898, -0.3423,
                                  -0.2071, -0.7468, -0.5819,
