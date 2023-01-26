@@ -1007,4 +1007,28 @@
       effort="${EFFORT}"
       velocity="${VELOCITY}"/>
   </joint>
+
+  <link name="Tip">
+    <inertial>
+      <origin
+        xyz="5.78568388753808E-07 5.03623603487213E-07 0.0608602283267965"
+        rpy="0 0 0"/>
+      <mass value="0.497271341157921"/>
+      <inertia
+        ixx="0.00089124527277552"
+        ixy="-1.54419534730238E-09"
+        ixz="-1.30176586244889E-08"
+        iyy="0.000934969477700439"
+        iyz="1.62415264433302E-09"
+        izz="0.000719370850011746"/>
+    </inertial>
+  </link>
+  <joint name="S9T" type="fixed">
+    <origin
+      xyz="0 0 0.128"
+      rpy="0 0 0"/>
+    <parent link="Seg9_Head"/>
+    <child link="Tip"/>
+    <axis xyz="1 0 0"/>
+  </joint>
 </robot>

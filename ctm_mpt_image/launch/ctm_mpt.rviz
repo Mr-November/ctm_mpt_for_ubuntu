@@ -4,8 +4,7 @@ Panels:
     Name: Displays
     Property Tree Widget:
       Expanded:
-        - /Global Options1
-        - /Status1
+        - /RobotModel1/Links1/Tip1
       Splitter Ratio: 0.5
     Tree Height: 290
   - Class: rviz/Selection
@@ -38,7 +37,7 @@ Visualization Manager:
     - Alpha: 0.5
       Cell Size: 1
       Class: rviz/Grid
-      Color: 160; 160; 164
+      Color: 136; 138; 133
       Enabled: true
       Line Style:
         Line Width: 0.029999999329447746
@@ -117,6 +116,10 @@ Visualization Manager:
           Show Axes: false
           Show Trail: false
           Value: true
+        Tip:
+          Alpha: 1
+          Show Axes: true
+          Show Trail: false
         UnvJnt1:
           Alpha: 1
           Show Axes: false
@@ -168,16 +171,32 @@ Visualization Manager:
       Update Interval: 0
       Value: true
       Visual Enabled: true
-    - Class: rviz/Axes
+    - Alpha: 0.10000000149011612
+      Buffer Length: 1
+      Class: rviz/Path
+      Color: 255; 255; 255
       Enabled: true
-      Length: 0.800000011920929
-      Name: Axes
-      Radius: 0.00800000037997961
-      Reference Frame: <Fixed Frame>
+      Head Diameter: 0.30000001192092896
+      Head Length: 0.20000000298023224
+      Length: 0.019999999552965164
+      Line Style: Lines
+      Line Width: 0.029999999329447746
+      Name: Path
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
+      Pose Color: 255; 85; 255
+      Pose Style: Axes
+      Radius: 0.019999999552965164
+      Shaft Diameter: 0.10000000149011612
+      Shaft Length: 0.10000000149011612
+      Topic: /ctm_mpt/history_path
+      Unreliable: false
       Value: true
   Enabled: true
   Global Options:
-    Background Color: 48; 48; 48
+    Background Color: 238; 238; 236
     Default Light: true
     Fixed Frame: Ref
     Frame Rate: 30
@@ -203,15 +222,15 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 3
+      Distance: 2.5999999046325684
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 0
-        Y: 0
+        X: 0.10000000149011612
+        Y: 0.10000000149011612
         Z: 0.5
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
