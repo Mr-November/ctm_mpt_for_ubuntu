@@ -37,8 +37,8 @@
                 output="screen"/> -->
         
         <!-- Plot torque curve. -->
-        <node pkg="rqt_gui"
+        <!-- <node pkg="rqt_gui"
                 type="rqt_gui"
-                name="plotter"/>
+                name="plotter"/> -->
     </group>
 </launch>
