@@ -1,9 +1,44 @@
 <launch>
-    <group ns="ctm_mpt">
+<group ns = "ctm_mpt">
+        <!-- Public feedbacks from the motion capture system. -->
+        <!-- <include file="$(find vrpn_client_ros)/launch/sample.launch"/> -->
+        <arg name="server" default="192.168.3.10"/>
+        <node pkg="vrpn_client_ros" type="vrpn_client_node" name="vrpn_client_node" output="screen">
+        <rosparam subst_value="true">
+                server: $(arg server)
+                port: 3883
+
+                update_frequency: 100.0
+                frame_id: world
+
+                # Use the VRPN server's time, or the client's ROS time.
+                use_server_time: false
+                broadcast_tf: true
+
+                # Must either specify refresh frequency > 0.0, or a list of trackers to create
+                refresh_tracker_frequency: 1.0
+                #trackers:
+                #- FirstTracker
+                #- SecondTracker
+        </rosparam>
+        </node>
+
         <!-- Virtual controller. -->
         <!-- These three pkgs are bound together. -->
-        <param name="robot_description"
+        <!-- <param name="robot_description"
                 command="$(find xacro)/xacro '$(find ctm_mpt_image)/urdf/ctm_mpt.xacro'" />
+        <param name="P" value="0.3" />
+        <param name="I" value="0.00" />
+        <param name="D" value="0.00" />
+        <param name="JN" value="10" />
+        <param name="PN" value="10" />
+        <param name="DEBUG" value="true" />
+        <param name="step" value="60" />
+        <param name="MIN_ERR" value = "0.00000001"/>
+        <param name="MAX_ERR" value = "10"/>
+        <param name="loop_rate" value = "100"/>
+        <param name="MAX_LENGTH" value = "300"/>
+        <param name="STD" value = "0.0"/>
         <node pkg="robot_state_publisher"
                 type="robot_state_publisher"
                 name="robot_state_publisher"
@@ -12,12 +47,34 @@
                 type="rviz"
                 name="rviz"
                 args="-d $(find ctm_mpt_image)/launch/ctm_mpt.rviz"
-                output="screen"/>
-        <node pkg="ctm_mpt_kernal"
-                type="vrt_cntlr_node"
+                output="screen"/> -->
+
+        <!-- <node pkg="ctm_mpt_kernal"
+                type="controller_point_node"
+                name="controller_point"
+                output="screen"/> -->
+        <!--         <node pkg="ctm_mpt_kernal"
+                type="vrt_controller_node"
                 name="virtual_controller"
-                output="screen"/>
-        
+                output="screen"/> -->
+        <!--         <node pkg="ctm_mpt_kernal"
+                type="vrt_path_node"
+                name="vrt_controller"
+                output="screen"/> -->
+
+        <!-- <node pkg="ctm_mpt_kernal"
+                type="vrt_plan_node"
+                name="vrt_plan"
+                output="screen"/> -->
+        <!--         <node pkg="ctm_mpt_kernal"
+                type="matlab_linker_node"
+                name="matlab_linker_node"
+                output="screen"/> -->
+        <!--         <node pkg="ctm_mpt_kernal"
+                type="vrt_controller_adp_node"
+                name="virtual_controller"
+                output="screen"/> -->
+                
         <!-- Motor controller. -->
         <!-- <node pkg="ctm_mpt_kernal"
                 type="mtr_cntlr_node"
@@ -35,10 +92,21 @@
                 type="test_node"
                 name="test_node"
                 output="screen"/> -->
-        
+
+        <!-- Track point. -->
+        <node pkg="ctm_mpt_kernal"
+                type="track_point_node"
+                name="track_point_node"
+                output="screen"/>
+
         <!-- Plot torque curve. -->
-        <!-- <node pkg="rqt_gui"
+        <node pkg="rqt_gui"
                 type="rqt_gui"
-                name="plotter"/> -->
-    </group>
+                name="plotter"/>
+                
+        <!-- <node pkg="ctm_mpt_kernal"
+                type="end_set_node"
+                name="end_set"
+                output="screen"/>  -->
+</group>
 </launch>

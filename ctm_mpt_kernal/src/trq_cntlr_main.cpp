@@ -3,7 +3,7 @@
 #include <iostream>
 #include "ctm_mpt2.h"
 
-void watchControlSignal(float* ctr, float* dst, float* src, float* err, size_t n);
+void seeControlSignal(float* ctr, float* dst, float* src, float* err, size_t n);
 
 int main(int argc, char** argv)
 {
@@ -44,9 +44,9 @@ int main(int argc, char** argv)
     // If use torque controller, uncomment this.
     // *************************************************
     //         kp, ki, kd,  dt
-    CntlrPID c( 2,  0,  0, 0.2, N);
+    CntlrPID c( 2,  0.01,  0, 0.2, N);
     float trq[N] = {0.0};
-    float trq_expt[N] = {0.7, 0.7, 0.7, 0.4, 0.4, 0.4, 0.7, 0.7, 0.7};
+    float trq_expt[N] = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
     float trq_diff[N] = {0.0};
     float pid_out[N] = {0.0};
     float dist[] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
@@ -78,8 +78,8 @@ int main(int argc, char** argv)
 
     // m.print();
     // m.init();
-    // m.zero();
-    // m.print();
+    m.zero();
+    m.print();
 
     ros::Rate loop_rate(5);
     std::getchar();
@@ -88,7 +88,7 @@ int main(int argc, char** argv)
         size_t i = 0;
         
         // Check if it is overloaded.
-        // Need in each loop.
+        // Necessary in each loop.
         if (m.read(trq))
         {
             return 1;
@@ -96,7 +96,7 @@ int main(int argc, char** argv)
 
         while (i < N)
         {
-            msg.data.at(i) = trq[i]; // Need in each loop.
+            msg.data.at(i) = trq[i]; // Necessary in each loop.
             // For single motor pid debugging, use
             // uint8_t id = 1;
             // trq_diff[id-1] = trq_expt[id-1] - trq[id-1];
@@ -104,19 +104,16 @@ int main(int argc, char** argv)
             trq_diff[i] = trq_expt[i] - trq[i];
             i++;
         }
-        trq_pub.publish(msg); // Need in each loop.
+        trq_pub.publish(msg); // Necessary in each loop.
 
-        // trq_diff[4-1] = 0.0;
-        // trq_diff[5-1] = 0.0;
-        trq_diff[6-1] = 0.0;
         c.pid(trq_diff, pid_out);
 
         // When tuning a PID, print the control signal first.
         // Check if the values are abnormal before continue.
-        watchControlSignal(pid_out, trq_expt, trq, trq_diff, N);
+        seeControlSignal(pid_out, trq_expt, trq, trq_diff, N);
 
         std::getchar();
-        // m.move(pid_out);
+        m.move(pid_out);
         m.print();
 
         // loop_rate.sleep();
@@ -125,7 +122,7 @@ int main(int argc, char** argv)
     return 0;
 }
 
-void watchControlSignal(float* out, float* dst, float* cur, float* err, size_t n)
+void seeControlSignal(float* out, float* dst, float* cur, float* err, size_t n)
 {
     size_t i = 0;
 

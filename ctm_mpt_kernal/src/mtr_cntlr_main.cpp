@@ -1,13 +1,33 @@
 #include <ros/ros.h>
 #include <std_msgs/Float32MultiArray.h>
+#include "std_msgs/Float64MultiArray.h"
 #include <iostream>
 #include <string>
 #include <fstream>
 #include "ctm_mpt2.h"
-
+#define pi 3.14159265358
+using namespace std;
+float dist[] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+float last_dist[] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+float d_dist[] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 void proc(size_t cur, size_t tot);
 void watchControlSignal(float* out, size_t n);
-
+void distCallback(const std_msgs::Float64MultiArray& dist_msg) 
+{ 
+    ROS_INFO("received value of position: ");
+    // std::string fn("/home/stalin/CTM/src/ctm_mpt_for_ubuntu-master/ctm_mpt_kernal/src/dist.txt");
+    // std::fstream fd;
+    // fd.open(fn,ios::out|ios::app);
+    for (int i = 0;i<9;i++)
+    {
+        last_dist[i] = dist[i];
+        dist[i]=dist_msg.data.at(i);
+        cout << dist[i] << endl;
+        d_dist[i] = (dist[i] - last_dist[i]) / 0.042 * 180 / pi;
+    }
+    // fd << std::endl;
+	// fd.close();
+}
 int main(int argc, char** argv)
 {
     // ROS initialisation.
@@ -15,7 +35,7 @@ int main(int argc, char** argv)
 	ros::init(argc, argv, "mtr_cntlr");
     ros::NodeHandle nh;
     ros::Publisher trq_pub = nh.advertise<std_msgs::Float32MultiArray>("trq", 100);
-    
+    ros::Subscriber controller_dist = nh.subscribe("Dist",1,distCallback); 
     const size_t N = 9;
     std_msgs::Float32MultiArray msg;
     std_msgs::MultiArrayDimension dim;
@@ -26,7 +46,6 @@ int main(int argc, char** argv)
     msg.layout.data_offset = 0;
     msg.data = std::vector<float>(N, 0.0);
     // *************************************************
-    
 
 
     // Tpye of manipulator.
@@ -43,7 +62,7 @@ int main(int argc, char** argv)
     // *************************************************
     
 
-
+    float trq[N] = {0.0};
     // If use torque controller, uncomment this.
     // *************************************************
     // CntlrPID c(3, 0, 0, 0.02, N);
@@ -53,41 +72,13 @@ int main(int argc, char** argv)
     // float pid_out[N] = {0.0};
     // float dist[] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
     // *************************************************
-
-
-
-    // If use motor controller, uncomment this.
-    // *************************************************
-    float trq[N] = {0.0};
-    float dist[N] = {0.0};
-    std::string fn("/home/ellipse/Desktop/catkin_ws/src/ctm_mpt/ctm_mpt_kernal/src/fd.txt");
-    std::ifstream fin(fn);
-    std::string str_dist;
-    std::string str_tot;
-    size_t tot = 0;
-    size_t cur = 0;
-
-    if (!fin.is_open())
-    {
-        ROS_ERROR_STREAM("Unable to open \"" << fn << "\".");
-
-        return 0;
-    }
-
-    fin >> str_tot;
-    tot = std::stoul(str_tot);
-    // *************************************************
-
-
-
     ros::Rate loop_rate(1);
     m.init();
     m.print();
-    std::getchar();
-    while (cur < tot)
+    while (1)
     {
         size_t i = 0;
-        
+        ros::spinOnce();
         // Check if it is overloaded.
         // Need in each loop.
         if (m.read(trq))
@@ -98,26 +89,20 @@ int main(int argc, char** argv)
         for (i = 0; i < N; i++)
         {
             msg.data.at(i) = trq[i]; // Need in each loop.
-
-            fin >> str_dist;
-            dist[i] = std::stof(str_dist);
         }
         trq_pub.publish(msg); // Need in each loop.
-        dist[6-1] = 0.0;
-
-        m.print();
-        watchControlSignal(dist, N);
-        cur += 1;
-        proc(cur, tot);
-        std::getchar();
-        m.move(dist);
         
-        // loop_rate.sleep();
+        m.print();
+        watchControlSignal(d_dist, N); 
+        
+        std::getchar();
+        m.move(d_dist);
+        for (int i = 0; i < 9; i++)
+            d_dist[i] = 0;
+        loop_rate.sleep();
     }
     m.reset();
-    m.print();
-    fin.clear();
-    fin.close();
+    m.print(); 
 
     return 0;
 }

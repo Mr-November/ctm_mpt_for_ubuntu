@@ -20,11 +20,11 @@ CtmMpt::CtmMpt(const std::string& port_name)
 {
 	if ( this->mtr_serial_.isOpen() )
 	{
-		ROS_INFO("Open the motor port.\n");
+		ROS_INFO("Open the motor port.");
 	}
 	else
 	{
-		ROS_WARN("Cannot open the motor port.\n");
+		ROS_WARN("Cannot open the motor port.");
 	}
 
 	return;
@@ -47,20 +47,20 @@ CtmMpt::CtmMpt(const std::string& snsr_port_1,
 {
 	if ( this->snsr_serial_1_.isOpen() )
 	{
-		ROS_INFO("Open the first sensor port.\n");
+		ROS_INFO("Open the first sensor port.");
 	}
 	else
 	{
-		ROS_WARN("Cannot open the first sensor port.\n");
+		ROS_WARN("Cannot open the first sensor port.");
 	}
 
 	if ( this->snsr_serial_2_.isOpen() )
 	{
-		ROS_INFO("Open the second sensor port.\n");
+		ROS_INFO("Open the second sensor port.");
 	}
 	else
 	{
-		ROS_WARN("Cannot open the second sensor port.\n");
+		ROS_WARN("Cannot open the second sensor port.");
 	}
 
 	return;
@@ -90,29 +90,29 @@ CtmMpt::CtmMpt(const std::string& snsr_port_1,
 {
 	if ( this->snsr_serial_1_.isOpen() )
 	{
-		ROS_INFO("Open the first sensor port.\n");
+		ROS_INFO("Open the first sensor port.");
 	}
 	else
 	{
-		ROS_WARN("Cannot open the first sensor port.\n");
+		ROS_WARN("Cannot open the first sensor port.");
 	}
 
 	if ( this->snsr_serial_2_.isOpen() )
 	{
-		ROS_INFO("Open the second sensor port.\n");
+		ROS_INFO("Open the second sensor port.");
 	}
 	else
 	{
-		ROS_WARN("Cannot open the second sensor port.\n");
+		ROS_WARN("Cannot open the second sensor port.");
 	}
 
 	if ( this->mtr_serial_.isOpen() )
 	{
-		ROS_INFO("Open the motor port.\n");
+		ROS_INFO("Open the motor port.");
 	}
 	else
 	{
-		ROS_WARN("Cannot open the motor port.\n");
+		ROS_WARN("Cannot open the motor port.");
 	}
 
 	return;
@@ -171,7 +171,7 @@ void CtmMpt::mtrInit(const uint8_t id)
 	return;
 }
 
-void CtmMpt::mtrInit(const uint8_t* id, const size_t n)
+void CtmMpt::mtrInit(const uint8_t *const id, const size_t n)
 {
 	uint8_t cmd_reso[] = { 0x00, 0x10, 0x03, 0x80, 0x00, 0x04, 0x08,
 						   0x00, 0x00, 0x00, 0x01, // Electronic gear A = 1.
@@ -193,7 +193,7 @@ void CtmMpt::mtrInit(const uint8_t* id, const size_t n)
 	}
 	this->mtrReset(id, n);
 	
-	ROS_INFO_STREAM("Motors are initialised.\n");
+	ROS_INFO_STREAM("Motors are initialised.");
 
 	return;
 }
@@ -206,17 +206,17 @@ void CtmMpt::mtrReset(const uint8_t id)
 	this->mtrWrite_(cmd_rst, 6);
 
 	while (!this->mtrAtHome_(id));
-	ROS_INFO("(id %d) Motor is home.\n", id);
+	ROS_INFO("(id %d) Motor is home.", id);
 
 	return;
 }
 
-void CtmMpt::mtrReset(const uint8_t* id, const size_t n)
+void CtmMpt::mtrReset(const uint8_t *const id, const size_t n)
 {
 	uint8_t cmd_rst[] = { 0x00, 0x06, 0x00, 0x7d, 0x00, 0x10 };
 	size_t k = 0;
 	bool all_at_home = false;
-	std::string str("id");
+	// std::string str("id");
 	char id_k[4];
 
 	for (k = 0; k < n; k++)
@@ -225,7 +225,7 @@ void CtmMpt::mtrReset(const uint8_t* id, const size_t n)
 		this->mtrWrite_(cmd_rst, 6);
 
 		sprintf(id_k, " %d", id[k]);
-		str += id_k;
+		// str += id_k;
 	}
 
 	while (!all_at_home)
@@ -237,7 +237,7 @@ void CtmMpt::mtrReset(const uint8_t* id, const size_t n)
 		}
 	}
 
-	ROS_INFO_STREAM("(" << str << ") Motors are home.\n");
+	// ROS_INFO_STREAM("(" << str << ") Motors are home.");
 
 	return;
 }
@@ -249,12 +249,12 @@ void CtmMpt::mtrStop(const uint8_t id)
 	cmd_stp[0] = id;
 	this->mtrWrite_(cmd_stp, 6);
 
-	ROS_INFO("(id %d) Stop.\n", id);
+	ROS_INFO("(id %d) Stop.", id);
 
 	return;
 }
 
-void CtmMpt::mtrStop(const uint8_t* id, const size_t n)
+void CtmMpt::mtrStop(const uint8_t *const id, const size_t n)
 {
 	uint8_t cmd_stp[] = { 0x00, 0x06, 0x00, 0x7d, 0x00, 0x20 };
 	size_t k = 0;
@@ -270,7 +270,7 @@ void CtmMpt::mtrStop(const uint8_t* id, const size_t n)
 		str += id_k;
 	}
 
-	ROS_INFO_STREAM("(" << str << ") Stop.\n");
+	ROS_INFO_STREAM("(" << str << ") Stop.");
 
 	return;
 }
@@ -284,14 +284,14 @@ void CtmMpt::mtrZero(const uint8_t id)
 	cmd_zero_off[0] = id;
 	this->mtrWrite_(cmd_zero_on, 6);
 
-	ROS_INFO("(id %d) Zero out.\n", id);
+	ROS_INFO("(id %d) Zero out.", id);
 
 	this->mtrWrite_(cmd_zero_off, 6);
 
 	return;
 }
 
-void CtmMpt::mtrZero(const uint8_t* id, const size_t n)
+void CtmMpt::mtrZero(const uint8_t *const id, const size_t n)
 {
 	uint8_t cmd_zero_on[] = { 0x00, 0x06, 0x01, 0x8b, 0x00, 0x01 };
 	uint8_t cmd_zero_off[] = { 0x00, 0x06, 0x01, 0x8b, 0x00, 0x00 };
@@ -308,7 +308,7 @@ void CtmMpt::mtrZero(const uint8_t* id, const size_t n)
 		str += id_k;
 	}
 
-	ROS_INFO_STREAM("(" << str << ") Zero out.\n");
+	ROS_INFO_STREAM("(" << str << ") Zero out.");
 
 	for (k = 0; k < n; k++)
 	{
@@ -350,7 +350,7 @@ void CtmMpt::mtrSetPosAbs(const uint8_t id,
 		this->mtrWrite_(cmd_pos_off, 6);
 
 		while (!this->mtrAtPos_(id));
-		ROS_INFO("(id %d) Motor has arrived.\n", id);
+		ROS_INFO("(id %d) Motor has arrived.", id);
 	}
 	else if (mode == "EXIT_DIRECTLY")
 	{
@@ -360,7 +360,7 @@ void CtmMpt::mtrSetPosAbs(const uint8_t id,
 	}
 	else
 	{
-		ROS_WARN("What's the matter? You gave a wrong mode of `mtrSetPosAbs`.\n");
+		ROS_WARN("You just gave a wrong mode of `mtrSetPosAbs`.");
 	}
 
 	return;
@@ -396,7 +396,7 @@ void CtmMpt::mtrSetPosRel(const uint8_t id,
 		this->mtrWrite_(cmd_pos_off, 6);
 
 		while (!this->mtrAtPos_(id));
-		ROS_INFO("(id %d) Motor has arrived.\n", id);
+		ROS_INFO("(id %d) Motor has arrived.", id);
 	}
 	else if (mode == "EXIT_DIRECTLY")
 	{
@@ -406,13 +406,13 @@ void CtmMpt::mtrSetPosRel(const uint8_t id,
 	}
 	else
 	{
-		ROS_WARN("What's the matter? You gave a wrong mode of `mtrSetPosRel`.\n");
+		ROS_WARN("You just gave a wrong mode of `mtrSetPosRel`.");
 	}
 
 	return;
 }
 
-void CtmMpt::mtrGetPos(const uint8_t id, int32_t* pos)
+void CtmMpt::mtrGetPos(const uint8_t id, int32_t *const pos)
 {
 	uint8_t cmd_read_pos[] = { 0x00, 0x03, 0x00, 0xc6, 0x00, 0x02 };
 	size_t bytes_read = 0;
@@ -422,33 +422,18 @@ void CtmMpt::mtrGetPos(const uint8_t id, int32_t* pos)
 	this->mtrWrite_(cmd_read_pos, 6);
 	bytes_read = this->mtr_serial_.read(rsp, 9);
 
-	if (this->gossip_)
-	{
-		printf("Bytes read from motors: %d.\n", bytes_read);
-		utils::dispUint8Array(rsp, bytes_read, "Full response: ");
-	}
+	// printf("Bytes read from motors: %d.\n", bytes_read);
+	// utils::dispUint8Array(rsp, bytes_read, "Full response: ");
 	
 	utils::loadUint8ArrayToInt32(rsp + 3, pos);
-	// ROS_INFO("(id %d) Stays in %d (step).\n", id, pos);
+	// ROS_INFO("(id %d) Stays in %d (step).", id, pos);
 
 	return;
 }
 
-// void CtmMpt::mtrGetPos(const uint8_t* id, const size_t n)
-// {
-// 	size_t k = 0;
-
-// 	for (k = 0; k < n; k++)
-// 	{
-// 		this->mtrGetPos(id[k]);
-// 	}
-
-// 	return;
-// }
-
 void CtmMpt::mtrSetVel(const uint8_t id,
-								const int32_t vel, const float dur,
-								const uint32_t k_i, const uint32_t k_f)
+						const int32_t vel, const float dur,
+						const uint32_t k_i, const uint32_t k_f)
 {
 	uint8_t cmd_vel_paras[] = { 0x00, 0x10, 0x18, 0x00, 0x00, 0x0a, 0x14,
 								0x00, 0x00, 0x00, 0x10, // Continuous (speed control).
@@ -476,7 +461,7 @@ void CtmMpt::mtrSetVel(const uint8_t id,
 	return;
 }
 
-void CtmMpt::mtrGetVel(const uint8_t id, int32_t* vel_in_rpm, int32_t* vel_in_hz)
+void CtmMpt::mtrGetVel(const uint8_t id, int32_t *const vel_in_rpm, int32_t *const vel_in_hz)
 {
 	uint8_t cmd_read_vel[] = { 0x00, 0x03, 0x00, 0xc8, 0x00, 0x04 };
 	size_t bytes_read = 0;
@@ -486,32 +471,17 @@ void CtmMpt::mtrGetVel(const uint8_t id, int32_t* vel_in_rpm, int32_t* vel_in_hz
 	this->mtrWrite_(cmd_read_vel, 6);
 	bytes_read = this->mtr_serial_.read(rsp, 13);
 
-	if (this->gossip_)
-	{
-		printf("Bytes read from motors: %d.\n", bytes_read);
-		utils::dispUint8Array(rsp, bytes_read, "Full response: ");
-	}
+	// printf("Bytes read from motors: %d.\n", bytes_read);
+	// utils::dispUint8Array(rsp, bytes_read, "Full response: ");
 
 	utils::loadUint8ArrayToInt32(rsp + 3, vel_in_rpm);
 	utils::loadUint8ArrayToInt32(rsp + 7, vel_in_hz);
-	// ROS_INFO("(id %d) Travels at %d (rpm), or %d (Hz).\n", id, vel_in_rpm, vel_in_hz);
+	// ROS_INFO("(id %d) Travels at %d (rpm), or %d (Hz).", id, vel_in_rpm, vel_in_hz);
 
 	return;
 }
 
-// void CtmMpt::mtrGetVel(const uint8_t* id, const size_t n)
-// {
-// 	size_t k = 0;
-
-// 	for (k = 0; k < n; k++)
-// 	{
-// 		this->mtrGetVel(id[k]);
-// 	}
-
-// 	return;
-// }
-
-void CtmMpt::mtrGetTemp(const uint8_t id, int32_t* drv_temp, int32_t* mtr_temp)
+void CtmMpt::mtrGetTemp(const uint8_t id, int32_t *const drv_temp, int32_t *const mtr_temp)
 {
 	uint8_t cmd_read_temp[] = { 0x00, 0x03, 0x00, 0xf8, 0x00, 0x04 };
 	size_t bytes_read = 0;
@@ -521,32 +491,17 @@ void CtmMpt::mtrGetTemp(const uint8_t id, int32_t* drv_temp, int32_t* mtr_temp)
 	this->mtrWrite_(cmd_read_temp, 6);
 	bytes_read = this->mtr_serial_.read(rsp, 13);
 
-	if (this->gossip_)
-	{
-		printf("Bytes read from motors: %d.\n", bytes_read);
-		utils::dispUint8Array(rsp, bytes_read, "Full response: ");
-	}
+	// printf("Bytes read from motors: %d.\n", bytes_read);
+	// utils::dispUint8Array(rsp, bytes_read, "Full response: ");
 
 	utils::loadUint8ArrayToInt32(rsp + 3, drv_temp);
 	utils::loadUint8ArrayToInt32(rsp + 7, mtr_temp);
-	// ROS_INFO("(id %d) Driver %.1f degs Celsius, motor %.1f degs Celsius.\n", id, drv_temp * 0.1, mtr_temp * 0.1);
+	// ROS_INFO("(id %d) Driver %.1f degs Celsius, motor %.1f degs Celsius.", id, drv_temp * 0.1, mtr_temp * 0.1);
 
 	return;
 }
 
-// void CtmMpt::mtrGetTemp(const uint8_t* id, const size_t n)
-// {
-// 	size_t k = 0;
-
-// 	for (k = 0; k < n; k++)
-// 	{
-// 		this->mtrGetTemp(id[k]);
-// 	}
-
-// 	return;
-// }
-
-void CtmMpt::mtrGetVolt(const uint8_t id, int32_t* inv_volt, int32_t* pwr_volt)
+void CtmMpt::mtrGetVolt(const uint8_t id, int32_t *const inv_volt, int32_t *const pwr_volt)
 {
 	uint8_t cmd_read_temp[] = { 0x00, 0x03, 0x01, 0x46, 0x00, 0x04 };
 	size_t bytes_read = 0;
@@ -556,30 +511,15 @@ void CtmMpt::mtrGetVolt(const uint8_t id, int32_t* inv_volt, int32_t* pwr_volt)
 	this->mtrWrite_(cmd_read_temp, 6);
 	bytes_read = this->mtr_serial_.read(rsp, 13);
 
-	if (this->gossip_)
-	{
-		printf("Bytes read from motors: %d.\n", bytes_read);
-		utils::dispUint8Array(rsp, bytes_read, "Full response: ");
-	}
+	// printf("Bytes read from motors: %d.\n", bytes_read);
+	//utils::dispUint8Array(rsp, bytes_read, "Full response: ");
 
 	utils::loadUint8ArrayToInt32(rsp + 3, inv_volt);
 	utils::loadUint8ArrayToInt32(rsp + 7, pwr_volt);
-	// ROS_INFO("(id %d) Power supply %.1f V, inverter %.1f V.\n", id, inv_volt * 0.1, pwr_volt * 0.1);
+	// ROS_INFO("(id %d) Power supply %.1f V, inverter %.1f V.", id, inv_volt * 0.1, pwr_volt * 0.1);
 
 	return;
 }
-
-// void CtmMpt::mtrGetVolt(const uint8_t* id, const size_t n)
-// {
-// 	size_t k = 0;
-
-// 	for (k = 0; k < n; k++)
-// 	{
-// 		this->mtrGetVolt(id[k]);
-// 	}
-
-// 	return;
-// }
 
 void CtmMpt::snsrInit(void)
 {
@@ -592,12 +532,12 @@ void CtmMpt::snsrInit(void)
 	cmd_smpf += std::to_string(this->sampling_rate_);
 	this->snsrWrite_(cmd_smpf);
 
-	ROS_INFO_STREAM("Sensors are initialised.\n");
+	ROS_INFO_STREAM("Sensors are initialised.");
 
 	return;
 }
 
-void CtmMpt::snsrRead(float* dst)
+void CtmMpt::snsrRead(float *const dst)
 {
 	std::string cmd_read("AT+GOD");
 	size_t bytes_read = 0;
@@ -608,11 +548,9 @@ void CtmMpt::snsrRead(float* dst)
 
 	// Collect and parse data from the first sensors.
 	bytes_read = this->snsr_serial_1_.read(data_1, 31);
-	if (this->gossip_)
-	{
-		printf("Bytes read from (the first) sensors: %d.\n", bytes_read);
-		utils::dispUint8Array(data_1, bytes_read, "Full response: ");
-	}
+	// printf("Bytes read from (the first) sensors: %d.\n", bytes_read);
+	// utils::dispUint8Array(data_1, bytes_read, "Full response: ");
+
 	if (dst == NULL)
 	{
 		this->snsrInfoAnalyse_(data_1, "Group 1");
@@ -624,11 +562,9 @@ void CtmMpt::snsrRead(float* dst)
 
 	// Collect and parse data from the second sensors.
 	bytes_read = this->snsr_serial_2_.read(data_2, 31);
-	if (this->gossip_)
-	{
-		printf("Bytes read from (the second) sensors: %d.\n", bytes_read);
-		utils::dispUint8Array(data_2, bytes_read, "Full response: ");
-	}
+	// printf("Bytes read from (the second) sensors: %d.\n", bytes_read);
+	// utils::dispUint8Array(data_2, bytes_read, "Full response: ");
+
 	if (dst == NULL)
 	{
 		this->snsrInfoAnalyse_(data_2, "Group 2");
@@ -673,7 +609,7 @@ void CtmMpt::snsrGetCfg(void)
 		ROS_WARN("Inconsistency between two sensor groups.");
 	}
 
-	ROS_INFO_STREAM(rsp_1_1 << ", " << rsp_2_1 << ".\n");
+	ROS_INFO_STREAM(rsp_1_1 << ", " << rsp_2_1 << ".");
 
 	return;
 }
@@ -709,7 +645,7 @@ void CtmMpt::snsrGetMat(void)
 	return;
 }
 
-void CtmMpt::mtrWrite_(const uint8_t* cmd, const size_t len)
+void CtmMpt::mtrWrite_(const uint8_t *const cmd, const size_t len)
 {
 	uint8_t* new_cmd = new uint8_t[len + 2]; // Create a new array.
 	size_t bytes_wrote = 0, bytes_read = 0;
@@ -725,15 +661,10 @@ void CtmMpt::mtrWrite_(const uint8_t* cmd, const size_t len)
 	if (new_cmd[1] != 0x03)
 	{
 		bytes_read = this->mtr_serial_.read(rsp, 8);
-
-		if (this->gossip_)
-		{
-			printf("Bytes wrote to motors: %d.\n", bytes_wrote);
-			utils::dispUint8Array(new_cmd, len + 2, "Full command: ");
-		
-			printf("Bytes read from motors: %d.\n", bytes_read);
-			utils::dispUint8Array(rsp, bytes_read, "Full response: ");
-		}
+		// printf("Bytes wrote to motors: %d.\n", bytes_wrote);
+		// utils::dispUint8Array(new_cmd, len + 2, "Full command: ");
+		// printf("Bytes read from motors: %d.\n", bytes_read);
+		// utils::dispUint8Array(rsp, bytes_read, "Full response: ");
 	}
 	// else
 	// {
@@ -771,11 +702,8 @@ void CtmMpt::snsrWrite_(const std::string& cmd)
 	for (k = 1; k <= 2; k++)
 	{
 		// Display what had been written to sensor group k.
-		if (this->gossip_)
-		{
-			printf("Bytes wrote to sensor group %d: %d.\n", k, bytes_wrote);
-			std::cout << "Full command: " << new_cmd << std::endl;
-		}
+		// printf("Bytes wrote to sensor group %d: %d.\n", k, bytes_wrote);
+		// std::cout << "Full command: " << new_cmd << std::endl;
 
 		// Get response from group k.
 		if (cmd != "AT+GOD" && cmd.back() != '?')
@@ -783,20 +711,14 @@ void CtmMpt::snsrWrite_(const std::string& cmd)
 			if (k == 1)
 			{
 				bytes_read = this->snsr_serial_1_.readline(rsp_1, 64, "\r\n");
-				if (this->gossip_)
-				{
-					printf("Bytes read from sensor group 1: %d.\n", bytes_read);
-					std::cout << "Full response: " << rsp_1 << std::endl;
-				}
+				// printf("Bytes read from sensor group 1: %d.\n", bytes_read);
+				// std::cout << "Full response: " << rsp_1 << std::endl;
 			}
 			else // In this case k = 2.
 			{
 				bytes_read = this->snsr_serial_2_.readline(rsp_2, 64, "\r\n");
-				if (this->gossip_)
-				{
-					printf("Bytes read from sensor group 2: %d.\n", bytes_read);
-					std::cout << "Full response: " << rsp_2 << std::endl;
-				}
+				// printf("Bytes read from sensor group 2: %d.\n", bytes_read);
+				// std::cout << "Full response: " << rsp_2 << std::endl;
 			}
 		}
 	}
@@ -836,7 +758,8 @@ bool CtmMpt::mtrAtHome_(const uint8_t id)
 	return at_home;
 }
 
-void CtmMpt::snsrInfoAnalyse_(const uint8_t* data, const std::string prefix, float* dst, const size_t n)
+void CtmMpt::snsrInfoAnalyse_(const uint8_t *const data, const std::string prefix,
+								float *const dst, const size_t n)
 {	
 	uint16_t pkg_len = 0;
 	uint16_t pkg_num = 0;
@@ -853,45 +776,28 @@ void CtmMpt::snsrInfoAnalyse_(const uint8_t* data, const std::string prefix, flo
 
 	// Package length.
 	utils::loadUint8ArrayToUint16(data + 2, &pkg_len);
-	if (this->gossip_)
-	{
-		printf("Package length:  %d Bytes.\n", pkg_len);
-	}
+	// printf("Package length:  %d Bytes.\n", pkg_len);
 
 	// Package number.
 	utils::loadUint8ArrayToUint16(data + 4, &pkg_num);
-	if (this->gossip_)
-	{
-		printf("Package number:  No.%d.\n", pkg_num);
-	}
+	// printf("Package number:  No.%d.\n", pkg_num);
 
 	// Sensor value.
 	for (i = 0; i < ch_size; i++)
 	{
 		utils::loadUint8ArrayToFloat32(data + 4 * i + 6, ch_val + i);
 	}
-	if (this->gossip_)
-	{
-		std::cout << prefix << " channel: ( ";
-	}
+	// std::cout << prefix << " channel: ( ";
 	for (i = 0; i < ch_size; i++)
 	{
 		if (dst != NULL && i < n)
 		{
 			*(dst + i) = ch_val[i];
 		}
-		if (this->gossip_)
-		{
-			printf("%.4f ", ch_val[i]);
-		}
+		// printf("%.4f ", ch_val[i]);
 	}
-	if (this->gossip_)
-	{
-		std::cout << ")." << std::endl;
-
-		// Correction code.
-		printf("Correction code: %02x.\n\n", data[30]);
-	}
+	// std::cout << ")." << std::endl;
+	// printf("Correction code: %02x.\n\n", data[30]); // Correction code.
 
 	return;
 }

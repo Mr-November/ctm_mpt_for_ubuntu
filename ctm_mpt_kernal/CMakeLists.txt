@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.0.2)
 project(ctm_mpt_kernal)
+set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR})
+include_directories(${EIGEN3_INCLUDE_DIRS})
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 add_compile_options(-std=c++11)
@@ -135,11 +137,20 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(vrt_cntlr_node src/vrt_cntlr_main.cpp)
-add_executable(mtr_cntlr_node src/mtr_cntlr_main.cpp src/ctm_mpt.cpp src/ctm_mpt2.cpp src/utils.cpp)
-add_executable(trq_cntlr_node src/trq_cntlr_main.cpp src/ctm_mpt.cpp src/ctm_mpt2.cpp src/utils.cpp)
-add_executable(test_node src/test.cpp src/ctm_mpt.cpp src/ctm_mpt2.cpp src/utils.cpp)
-
+# add_executable(vrt_cntlr_node src/vrt_cntlr_main.cpp src/kinematics.cpp)
+# add_executable(mtr_cntlr_node src/mtr_cntlr_main.cpp src/ctm_mpt.cpp src/ctm_mpt2.cpp src/utils.cpp)
+# add_executable(trq_cntlr_node src/trq_cntlr_main.cpp src/ctm_mpt.cpp src/ctm_mpt2.cpp src/utils.cpp)
+# add_executable(test_node src/test.cpp src/ctm_mpt.cpp src/ctm_mpt2.cpp src/utils.cpp)
+add_executable(track_point_node src/track_point.cpp src/ctm_mpt.cpp src/ctm_mpt2.cpp src/utils.cpp)
+# add_executable(vrt_controller_adp_node src/vrt_controller_adp.cpp  src/kinematics.cpp)
+# add_executable(vrt_controller_node src/vrt_controller.cpp  src/kinematics.cpp)
+# add_executable(vrt_plan_node src/vrt_controller_plan.cpp  src/kinematics.cpp)
+# add_executable(vrt_path_node src/vrt_controller_path.cpp  src/kinematics.cpp)
+# add_executable(matlab_linker_node src/matlab_link)
+# add_executable(controller_path_node src/controller_plan.cpp  src/kinematics.cpp)
+# add_executable(controller_point_node src/controller_point.cpp  src/kinematics.cpp)
+# add_executable(end_set_node src/end_set.cpp)
+#
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
 ## target back to the shorter version for ease of user use
@@ -151,19 +162,43 @@ add_executable(test_node src/test.cpp src/ctm_mpt.cpp src/ctm_mpt2.cpp src/utils
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(vrt_cntlr_node
+# target_link_libraries(vrt_cntlr_node
+#   ${catkin_LIBRARIES}
+# )
+# target_link_libraries(mtr_cntlr_node
+#   ${catkin_LIBRARIES}
+# )
+# target_link_libraries(trq_cntlr_node
+#   ${catkin_LIBRARIES}
+# )
+# target_link_libraries(test_node
+#   ${catkin_LIBRARIES}
+# )
+target_link_libraries(track_point_node
   ${catkin_LIBRARIES}
 )
-target_link_libraries(mtr_cntlr_node
-  ${catkin_LIBRARIES}
-)
-target_link_libraries(trq_cntlr_node
-  ${catkin_LIBRARIES}
-)
-target_link_libraries(test_node
-  ${catkin_LIBRARIES}
-)
+# target_link_libraries(vrt_controller_node
+#   ${catkin_LIBRARIES}
+# )
+# target_link_libraries(vrt_plan_node
+#   ${catkin_LIBRARIES}
+# )
 
+# target_link_libraries(matlab_linker_node
+#   ${catkin_LIBRARIES}
+# )
+# target_link_libraries(vrt_path_node
+#   ${catkin_LIBRARIES}
+# )
+# target_link_libraries(controller_path_node
+#   ${catkin_LIBRARIES}
+# )
+# target_link_libraries(controller_point_node
+#   ${catkin_LIBRARIES}
+# )
+# target_link_libraries(end_set_node
+#   ${catkin_LIBRARIES}
+# )
 #############
 ## Install ##
 #############
