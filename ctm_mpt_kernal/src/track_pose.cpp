@@ -48,7 +48,7 @@ int main(int argc, char** argv)
 
     // m.print();
     // m.zero();
-    m.init();
+    // m.init();
     // m.print();
     // float dist[] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
     // m.move(1, -30.0);
@@ -56,12 +56,16 @@ int main(int argc, char** argv)
     // m.init();
     // m.print();
 
-    m.setTargetPose(Eigen::Matrix4f::Identity(4, 4));
+    m.setTargetXi(Eigen::Matrix<float, 6, 1> {0.8147, 0.9058, 0.1270, 0.9134, 0.6324, 0.0975});
+    m.trackXi();
+    m.init();
+
+    // m.setTargetPose(Eigen::Matrix4f::Identity(4, 4));
     
     ros::Rate loop_rate(1000.0 / m.CTI);
     while (ros::ok())
     {
-        m.trackPoint();
+        // m.trackPose();
 
         m.readTorque();
 

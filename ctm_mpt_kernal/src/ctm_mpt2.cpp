@@ -10,11 +10,13 @@
 #include <Eigen/Geometry>
 #include <unsupported/Eigen/MatrixFunctions>
 
-Eigen::MatrixXf uphat(const Eigen::VectorXf V);
-Eigen::VectorXf upvee(const Eigen::MatrixXf M);
+Eigen::Matrix3f uphat(const Eigen::Vector3f V);
+Eigen::Matrix4f uphat(const Eigen::Matrix<float, N_DIM, 1> V);
+Eigen::Vector3f upvee(const Eigen::Matrix3f M);
+Eigen::Matrix<float, N_DIM, 1> upvee(const Eigen::Matrix4f M);
 Eigen::Matrix4f invt(const Eigen::Matrix4f T);
 Eigen::Matrix4f q2T(const Eigen::Quaternionf quat, Eigen::Vector3f orig);
-Eigen::Matrix<float, 6, 2> jaco_c12(const float w1, const float w2, const float L);
+Eigen::Matrix<float, N_DIM, 2> jaco_c12(const float w1, const float w2, const float L);
 
 // Continuum manipulator.
 CtmMpt2::CtmMpt2(const std::string& snsr_port_1,
@@ -73,9 +75,9 @@ void CtmMpt2::print(void)
     uint8_t id = 0;
 
     ROS_INFO("\n -- id   po(mm)  po(step)  ve(rpm)   ve(Hz)  tp(drv)  tp(mtr)  vt(inv)  vt(pwr)");
-    while (i < this->N_ALL)
+    while (i < N_MOTOR)
     {
-        id = this->ID_ALL[i];
+        id = this->ID_MOTOR[i];
         this->mtrGetPos(id, &pos);
         this->mtrGetVel(id, &vel_in_rpm, &vel_in_hz);
         this->mtrGetTemp(id, &drv_temp, &mtr_temp);
@@ -99,15 +101,15 @@ bool CtmMpt2::readTorque() // and publish!
     std_msgs::Float32MultiArray msg;
     std_msgs::MultiArrayDimension dim;
     dim.label = "tau";
-    dim.size = this->N_ALL;
-    dim.stride = this->N_ALL;
+    dim.size = N_MOTOR;
+    dim.stride = N_MOTOR;
     msg.layout.dim.push_back(dim);
     msg.layout.data_offset = 0;
-    msg.data = std::vector<float>(this->N_ALL, 0.0);
+    msg.data = std::vector<float>(N_MOTOR, 0.0);
 
     this->snsrRead(this->torque);
 
-	while (k < this->N_ALL)
+	while (k < N_MOTOR)
 	{
 		this->torque[k] -= this->TORQUE_OFFSET[k];
         msg.data.at(k) = this->torque[k];
@@ -133,7 +135,7 @@ bool CtmMpt2::readTorque() // and publish!
 
 void CtmMpt2::stop(void)
 {
-    this->mtrStop(this->ID_ALL, this->N_ALL);
+    this->mtrStop(this->ID_MOTOR, N_MOTOR);
     ROS_ERROR_STREAM("STOPPED.");
 
     return;
@@ -141,7 +143,7 @@ void CtmMpt2::stop(void)
 
 void CtmMpt2::init(void)
 {
-    this->mtrInit(this->ID_ALL, this->N_ALL);
+    this->mtrInit(this->ID_MOTOR, N_MOTOR);
     this->snsrInit();
     // this->snsrGetCfg();
     // this->snsrGetMat();
@@ -152,13 +154,13 @@ void CtmMpt2::init(void)
     // for(size_t i = 0; i < N0; i++)
     // {
     //     this->readTorque();
-    //     for(size_t j = 0; j < this->N_ALL; j++)
+    //     for(size_t j = 0; j < N_MOTOR; j++)
     //     {
     //         this->torque_offset[j] += this->torque[j] / N0;
     //     }
     // }
     // ROS_INFO("!");
-    // for(size_t k = 0; k < this->N_ALL; k++)
+    // for(size_t k = 0; k < N_MOTOR; k++)
     // {
     //     printf("%.6f, ", this->torque_offset[k]);
     // }
@@ -168,7 +170,7 @@ void CtmMpt2::init(void)
 
 void CtmMpt2::reset(void)
 {
-    this->mtrReset(this->ID_ALL, this->N_ALL);
+    this->mtrReset(this->ID_MOTOR, N_MOTOR);
     ROS_INFO_STREAM("RESET.");
 
     return;
@@ -176,17 +178,18 @@ void CtmMpt2::reset(void)
 
 void CtmMpt2::zero(void)
 {
-    this->mtrZero(this->ID_ALL, this->N_ALL);
+    this->mtrZero(this->ID_MOTOR, N_MOTOR);
     ROS_INFO_STREAM("ZERO.");
 
     return;
 }
 
 void CtmMpt2::getCableLengthDiff(float *const diff,
-                                    const Eigen::Matrix<float, 6, 1> xi_diff)
+                                    const Eigen::Matrix<float, N_DIM, 1> xi_diff)
 {
-    Eigen::MatrixXf lengths_diff = this->U_DELTA.transpose() * this->C_DELTA * xi_diff;
-    for (size_t i = 0; i < this->N_CABLE; i++)
+    Eigen::Matrix<float, N_CABLE, 1> lengths_diff =
+        this->U_DELTA.transpose() * this->C_DELTA * xi_diff;
+    for (size_t i = 0; i < N_CABLE; i++)
     {
         diff[i] = lengths_diff(i, 0);
         // std::cout << diff[i] << ", ";
@@ -198,43 +201,43 @@ void CtmMpt2::getCableLengthDiff(float *const diff,
 
 void CtmMpt2::move(const float *const dist)
 {
-    size_t* idcs = new size_t[this->N_ALL]();
+    size_t* idcs = new size_t[N_MOTOR]();
     size_t idx = 0; // idx = idcs[i];
     size_t i = 0;
 	bool all_at_pos = false;
 
     // Initialise with array indices.
-    while (i < this->N_ALL)
+    while (i < N_MOTOR)
     {
         idcs[i] = i;
         i++;
     }
 
-    std::sort(idcs, idcs + this->N_ALL,
+    std::sort(idcs, idcs + N_MOTOR,
                 [&](size_t j, size_t k)->bool{return dist[j] < dist[k];});
 
     // std::cout << "idcs: ";
-    // for (i = 0; i < this->N_ALL; i++)
+    // for (i = 0; i < N_MOTOR; i++)
     // {
     //     std::cout << idcs[i] << "  ";
     // }
     // std::cout << std::endl << "id: ";
-    // for (i = 0; i < this->N_ALL; i++)
+    // for (i = 0; i < N_MOTOR; i++)
     // {
-    //     std::cout << int32_t(this->ID_ALL[idcs[i]]) << "  ";
+    //     std::cout << int32_t(this->ID_MOTOR[idcs[i]]) << "  ";
     // }
     // std::cout << std::endl << "dist: ";
-    // for (i = 0; i < this->N_ALL; i++)
+    // for (i = 0; i < N_MOTOR; i++)
     // {
     //     std::cout << dist[idcs[i]] << "  ";
     // }
     // std::cout << std::endl;
 
     i = 0;
-    while (i < this->N_ALL)
+    while (i < N_MOTOR)
     {
         idx = idcs[i++];
-        this->mtrSetPosRel(this->ID_ALL[idx], dist[idx] * this->RESOLUTION[idx],
+        this->mtrSetPosRel(this->ID_MOTOR[idx], dist[idx] * this->RESOLUTION[idx],
                             this->VEL[idx], this->ACC_START[idx], this->ACC_BRAKE[idx],
                             "EXIT_DIRECTLY");
     }
@@ -245,9 +248,9 @@ void CtmMpt2::move(const float *const dist)
 
 		all_at_pos = true;
         i = 0;
-		while (i < this->N_ALL)
+		while (i < N_MOTOR)
 		{
-			all_at_pos &= this->mtrAtPos_(this->ID_ALL[idcs[i++]]);
+			all_at_pos &= this->mtrAtPos_(this->ID_MOTOR[idcs[i++]]);
 		}
 	}
 
@@ -276,9 +279,9 @@ void CtmMpt2::relax(const float dist)
     size_t i = 0;
     bool all_at_pos = false;
 
-    while (i < this->N_ALL)
+    while (i < N_MOTOR)
     {
-        this->mtrSetPosRel(this->ID_ALL[i], dist * this->RESOLUTION[i],
+        this->mtrSetPosRel(this->ID_MOTOR[i], dist * this->RESOLUTION[i],
                             this->VEL[i], this->ACC_START[i], this->ACC_BRAKE[i],
                             "EXIT_DIRECTLY");
         i++;
@@ -290,9 +293,9 @@ void CtmMpt2::relax(const float dist)
         this->readTorque();
 
 		all_at_pos = true;
-		while (j < this->N_ALL)
+		while (j < N_MOTOR)
 		{
-			all_at_pos &= this->mtrAtPos_(this->ID_ALL[j++]);
+			all_at_pos &= this->mtrAtPos_(this->ID_MOTOR[j++]);
 		}
 	}
 
@@ -300,54 +303,34 @@ void CtmMpt2::relax(const float dist)
 }
 
 // Motion capture system callback.
-Eigen::MatrixXf uphat(const Eigen::VectorXf V)
+Eigen::Matrix3f uphat(const Eigen::Vector3f V)
 {
-	if (V.size() == 3)
-	{
-		Eigen::Matrix3f M {
-            {  0.0, -V(2),  V(1)},
-          	{ V(2),   0.0, -V(0)},
-         	{-V(1),  V(0),   0.0},
-        };
-		return M;
-	}
-	else if(V.size() == 6)
-	{
-		Eigen::Matrix4f M {
-            {  0.0, -V(2),  V(1), V(3)},
-            { V(2),   0.0, -V(0), V(4)},
-            {-V(1),  V(0),   0.0, V(5)},
-            {  0.0,   0.0,   0.0,  0.0},
-        };
-		return M;
-	}
-    else
-    {
-        ROS_ERROR("Incorrect dimensionality.");
-	    return Eigen::Matrix4f::Zero(4,4);
-    }
+    return Eigen::Matrix3f {
+        {  0.0, -V(2),  V(1)},
+        { V(2),   0.0, -V(0)},
+        {-V(1),  V(0),   0.0},
+    };
 }
-Eigen::VectorXf upvee(const Eigen::MatrixXf M)
+Eigen::Matrix4f uphat(const Eigen::Matrix<float, 6, 1> V)
 {
-	if (M.cols()==3)
-	{
-		Eigen::Vector3f V {
-            -M(1,2), M(0,2), -M(0,1)
-        };
-		return V;
-	}
-	else if (M.cols() == 4)
-	{
-		Eigen::Matrix<float, 6, 1> V {
-            -M(1,2), M(0,2), -M(0,1), M(0,3), M(1,3), M(2,3)
-        };
-		return V;
-	}
-    else
-    {
-        ROS_ERROR("Incorrect dimensionality.");
-        return Eigen::Vector4f::Zero(4,1);
-    }
+    return Eigen::Matrix4f {
+        {  0.0, -V(2),  V(1), V(3)},
+        { V(2),   0.0, -V(0), V(4)},
+        {-V(1),  V(0),   0.0, V(5)},
+        {  0.0,   0.0,   0.0,  0.0},
+    };
+}
+Eigen::Vector3f upvee(const Eigen::Matrix3f M)
+{
+	return Eigen::Vector3f {
+        -M(1,2), M(0,2), -M(0,1)
+    };
+}
+Eigen::Matrix<float, 6, 1> upvee(const Eigen::Matrix4f M)
+{
+    return Eigen::Matrix<float, 6, 1> {
+        -M(1,2), M(0,2), -M(0,1), M(0,3), M(1,3), M(2,3)
+    };
 }
 Eigen::Matrix4f invt(const Eigen::Matrix4f T)
 {
@@ -384,18 +367,11 @@ void CtmMpt2::mcsCallback(const geometry_msgs::PoseStamped& tfmsg)
     return;
 }
 
-void CtmMpt2::setTargetPose(const Eigen::Matrix4f P)
-{
-    this->Td = P;
-
-    return;
-}
-
 // Calculate the Jacobian matrix.
 Eigen::Matrix<float, 6, 2> jaco_c12(const float w1, const float w2, const float L)
 {
 	Eigen::Vector3f w {w1, w2, 0};
-	Eigen::Matrix<float, 6, 3> Jc = Eigen::MatrixXf::Zero(6,3);
+	Eigen::Matrix<float, 6, 3> Jc = Eigen::Matrix<float, 6, 3>::Zero();
 	float n = w.norm();
 
 	if (n < 1e-6f)
@@ -438,30 +414,73 @@ Eigen::Matrix<float, 6, 6> CtmMpt2::jacobian3cc(const float L1, const float L2, 
 	Eigen::Matrix<float, 6, 2> J2 = jaco_c12(xi_2(0), xi_2(1), L2);
 	Eigen::Matrix<float, 6, 2> J1 = jaco_c12(this->xi(0),this->xi(1), L1);
 
+	Eigen::Matrix<float, 6, 1> J2c1 = J2.block(0,0,6,1);
+	Eigen::Matrix<float, 6, 1> J2c2 = J2.block(0,1,6,1);
+	Eigen::Matrix<float, 6, 1> J1c1 = J1.block(0,0,6,1);
+	Eigen::Matrix<float, 6, 1> J1c2 = J1.block(0,1,6,1);
+
 	Eigen::Matrix4f T3 = uphat(xi_3).exp();
 	Eigen::Matrix4f T2 = uphat(xi_2).exp();
 	Eigen::Matrix4f invT3 = invt(T3);
 	Eigen::Matrix4f invT2 = invt(T2);
 
+    Eigen::Matrix4f J2c1m = invT3 * uphat(J2c1) * T3;
+	Eigen::Matrix4f J2c2m = invT3 * uphat(J2c2) * T3;
+	Eigen::Matrix4f J1c1m = invT3 * invT2 * uphat(J1c1) * T2 * T3;
+	Eigen::Matrix4f J1c2m = invT3 * invT2 * uphat(J1c2) * T2 * T3;
+
     Eigen::Matrix<float, 6, 6> J;
 	
-	J2.block(0,0,6,1) = upvee(invT3 * uphat(J2.block(0,0,6,1)) * T3);
-	J2.block(0,1,6,1) = upvee(invT3 * uphat(J2.block(0,1,6,1)) * T3);
+	J.block(0,0,6,1) = upvee(J1c1m);
+	J.block(0,1,6,1) = upvee(J1c2m);
 
-	J1.block(0,0,6,1) = upvee(invT3 * invT2 * uphat(J1.block(0,0,6,1)) * T2 * T3);
-	J1.block(0,1,6,1) = upvee(invT3 * invT2 * uphat(J1.block(0,1,6,1)) * T2 * T3);
+	J.block(0,2,6,1) = upvee(J2c1m);
+	J.block(0,3,6,1) = upvee(J2c2m);
 	
-	J.block(0,0,6,2) = J1;
-	J.block(0,2,6,2) = J2;
 	J.block(0,4,6,2) = J3;
 
 	return J;
 }
 
-void CtmMpt2::trackPoint(void)
+void CtmMpt2::setTargetXi(const Eigen::Matrix<float, N_DIM, 1> Xi)
+{
+    this->xid = Xi;
+
+    return;
+}
+
+void CtmMpt2::setTargetPose(const Eigen::Matrix4f P)
+{
+    this->Td = P;
+
+    return;
+}
+
+void CtmMpt2::trackXi(void)
+{
+    float diff[N_CABLE] = {0.0};
+    Eigen::Matrix<float, N_DIM, 1> xi_diff = this->xid - this->xi;
+
+    // Get cable length difference.
+    this->getCableLengthDiff(diff, xi_diff);
+    std::cout << "diff = "
+                << (Eigen::Map<Eigen::Matrix<float, N_CABLE, 1>> (diff)).transpose()
+                << std::endl;
+
+    // Move the motors!
+    // this->move(diff);
+
+    // Update xi.
+    this->xi += xi_diff;
+
+    return;
+}
+
+void CtmMpt2::trackPose(void)
 {
     // Calculate the error.
-    Eigen::Matrix<float, 6, 1> V = upvee((invt(this->Tb) * this->Td).log());
+    Eigen::Matrix4f V_uphat = (invt(this->Tb) * this->Td).log();
+    Eigen::Matrix<float, 6, 1> V = upvee(V_uphat);
     std::cout << "V = " << V.transpose() << std::endl;
 
     // Calculate the Jacobian matrix, using this->xi.
@@ -470,18 +489,18 @@ void CtmMpt2::trackPoint(void)
     std::cout << "J = " << J << std::endl;
 
     // Calculate the xi difference.
-    Eigen::Matrix<float, 6, 1> xi_diff = J.transpose() * V;
+    Eigen::Matrix<float, N_DIM, 1> xi_diff = J.transpose() * V;
     std::cout << "xi_diff = " << xi_diff.transpose() << std::endl;
 
     // Calculate the controller output.
-    Eigen::Matrix<float, 6, 1> xi_diff_out = this->position_controller.pid(xi_diff);
+    Eigen::Matrix<float, N_DIM, 1> xi_diff_out = this->position_controller.pid(xi_diff);
     std::cout << "xi_diff_out = " << xi_diff_out.transpose() << std::endl;
 
     // Get cable length difference.
-    float diff[9] = {0.0};
+    float diff[N_CABLE] = {0.0};
     this->getCableLengthDiff(diff, xi_diff_out);
     std::cout << "diff = "
-                << (Eigen::Map<Eigen::Matrix<float, 9, 1>> (diff)).transpose()
+                << (Eigen::Map<Eigen::Matrix<float, N_CABLE, 1>> (diff)).transpose()
                 << std::endl;
 
     // Move the motors!
@@ -496,19 +515,17 @@ void CtmMpt2::trackPoint(void)
 
 
 CtrlPID::CtrlPID(const float kp, const float ki, const float kd,
-                    const float dt, const size_t n)
+                    const float dt)
 {
     this->dt_ = dt;
     this->one_over_dt_ = 1.0 / dt;
-
-    this->n_ = n;
 
     this->kp_ = kp;
     this->ki_ = ki;
     this->kd_ = kd;
 
-    this->err_sum_ = Eigen::MatrixXf::Zero(n, 1);
-    this->err_last_ = Eigen::MatrixXf::Zero(n, 1);
+    this->err_sum_ = Eigen::Matrix<float, N_DIM, 1>::Zero();
+    this->err_last_ = Eigen::Matrix<float, N_DIM, 1>::Zero();
 
     return;
 }
@@ -518,10 +535,10 @@ CtrlPID::~CtrlPID()
     return;
 }
 
-Eigen::MatrixXf CtrlPID::pid(const Eigen::MatrixXf err)
+Eigen::Matrix<float, N_DIM, 1> CtrlPID::pid(const Eigen::Matrix<float, N_DIM, 1> err)
 {
-    Eigen::MatrixXf derr = Eigen::MatrixXf::Zero(this->n_, 1);
-    Eigen::MatrixXf out = Eigen::MatrixXf::Zero(this->n_, 1);
+    Eigen::Matrix<float, N_DIM, 1> derr = Eigen::Matrix<float, N_DIM, 1>::Zero();
+    Eigen::Matrix<float, N_DIM, 1> out = Eigen::Matrix<float, N_DIM, 1>::Zero();
 
         if (this->is_first_run_)
         {

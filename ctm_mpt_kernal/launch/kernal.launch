@@ -93,10 +93,10 @@
                 name="test_node"
                 output="screen"/> -->
 
-        <!-- Track point. -->
+        <!-- Track pose. -->
         <node pkg="ctm_mpt_kernal"
-                type="track_point_node"
-                name="track_point_node"
+                type="track_pose_node"
+                name="track_pose_node"
                 output="screen"/>
 
         <!-- Plot torque curve. -->
