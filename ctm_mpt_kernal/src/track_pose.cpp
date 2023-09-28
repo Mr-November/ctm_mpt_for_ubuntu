@@ -6,7 +6,7 @@ int main(int argc, char** argv)
 {
     // ROS initialisation.
     // *************************************************
-	ros::init(argc, argv, "track_point_node");
+	ros::init(argc, argv, "track_pose_node");
     ros::NodeHandle nh;
     // *************************************************
     
@@ -18,32 +18,9 @@ int main(int argc, char** argv)
     // ls -al ttyUSB*
     // sudo chmod a+rw ttyUSB*
     // *************************************************
+    // CtmMpt2 m;
     //        "sensor 1",     "sensor 2",     "motor",       "ros handle".
     CtmMpt2 m("/dev/ttyUSB1", "/dev/ttyUSB2", "/dev/ttyUSB0",        &nh);
-    // *************************************************
-
-
-
-    // If use motor controller, uncomment this.
-    // *************************************************
-    // float trq[N] = {0.0};
-    // float dist[N] = {0.0};
-    // std::string fn("/home/ellipse/Desktop/catkin_ws/src/ctm_mpt/ctm_mpt_kernal/src/fd.txt");
-    // std::ifstream fin(fn);
-    // std::string str_dist;
-    // std::string str_tot;
-    // size_t tot = 0;
-    // size_t cur = 0;
-
-    // if (!fin.is_open())
-    // {
-    //     ROS_ERROR_STREAM("Unable to open \"" << fn << "\".");
-
-    //     return 0;
-    // }
-
-    // fin >> str_tot;
-    // tot = std::stoul(str_tot);
     // *************************************************
 
     // m.print();
@@ -52,26 +29,59 @@ int main(int argc, char** argv)
     // m.print();
     // float dist[] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
     // m.move(1, -30.0);
-    // m.relax(20.0);
+    // m.relax(10);
     // m.init();
     // m.print();
 
-    m.setTargetXi(Eigen::Matrix<float, 6, 1> {0.8147, 0.9058, 0.1270, 0.9134, 0.6324, 0.0975});
-    m.trackXi();
-    m.init();
+    // m.setTargetXi(Eigen::Matrix<float, 6, 1> {0.8147, 0.9058, 0.1270, 0.9134, 0.6324, 0.0975});
+    // m.trackXi();
+    // m.init();
 
     // m.setTargetPose(Eigen::Matrix4f::Identity(4, 4));
+    // Eigen::Matrix<float, 6, 3> xis {
+    //     {0, 0, 0},
+    //     {0, 2, 6},
+    //     {0, 0, 8},
+    //     {0, 0, 0},
+    //     {0, 0, 0},
+    //     {0, 0, 0},
+    // };
+    // m.setTargetPath(xis);
+    // m.allocateTime();
+
+    // Eigen::Matrix<float, 9, 1> td {0.15, 0.15, 0.15, 0.05, 0.05, 0.05, 0.0, 0.1, 0.1};
+    // m.setTargetTorque(td);
+
+
+    m.init();
+    Eigen::Matrix<float, 6, 1> xi {-1.0719,-0.0582,0.9587,0.8018,0.2375,-0.0146};
+    m.setTargetXi(xi);
+    m.setTargetPose(xi);
+    m.trackXi();
     
-    ros::Rate loop_rate(1000.0 / m.CTI);
+    ros::Rate loop_rate(1.0 / m.CTI);
     while (ros::ok())
     {
-        // m.trackPose();
+        m.trackPose();
+
+    //     // m.trackTorque();
+    //     // std::getchar();
 
         m.readTorque();
 
-        ros::spinOnce();
-        loop_rate.sleep();
+        // ros::spinOnce();
+
+    //     loop_rate.sleep();
     }
+
+    // m.init();
+    // m.print();
+    // m.print(6);
+    // m.run(6, 1.31947);
+    // m.snooze(10.0);
+    // m.stop();
+    // m.print();
+    // m.print(6);
 
     return 0;
 }

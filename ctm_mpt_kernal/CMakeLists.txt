@@ -141,7 +141,24 @@ include_directories(
 # add_executable(mtr_cntlr_node src/mtr_cntlr_main.cpp src/ctm_mpt.cpp src/ctm_mpt2.cpp src/utils.cpp)
 # add_executable(trq_cntlr_node src/trq_cntlr_main.cpp src/ctm_mpt.cpp src/ctm_mpt2.cpp src/utils.cpp)
 # add_executable(test_node src/test.cpp src/ctm_mpt.cpp src/ctm_mpt2.cpp src/utils.cpp)
-add_executable(track_pose_node src/track_pose.cpp src/ctm_mpt.cpp src/ctm_mpt2.cpp src/utils.cpp)
+add_executable(track_pose_node
+  src/track_pose.cpp
+  src/ctm_mpt.cpp
+  src/ctm_mpt2.cpp
+  src/utils.cpp
+)
+add_executable(track_path_node
+  src/track_path.cpp
+  src/ctm_mpt.cpp
+  src/ctm_mpt2.cpp
+  src/utils.cpp
+)
+add_executable(motor_terminal_node
+  src/motor_terminal.cpp
+  src/ctm_mpt.cpp
+  src/ctm_mpt2.cpp
+  src/utils.cpp
+)
 # add_executable(vrt_controller_adp_node src/vrt_controller_adp.cpp  src/kinematics.cpp)
 # add_executable(vrt_controller_node src/vrt_controller.cpp  src/kinematics.cpp)
 # add_executable(vrt_plan_node src/vrt_controller_plan.cpp  src/kinematics.cpp)
@@ -177,13 +194,18 @@ add_executable(track_pose_node src/track_pose.cpp src/ctm_mpt.cpp src/ctm_mpt2.c
 target_link_libraries(track_pose_node
   ${catkin_LIBRARIES}
 )
+target_link_libraries(track_path_node
+  ${catkin_LIBRARIES}
+)
+target_link_libraries(motor_terminal_node
+  ${catkin_LIBRARIES}
+)
 # target_link_libraries(vrt_controller_node
 #   ${catkin_LIBRARIES}
 # )
 # target_link_libraries(vrt_plan_node
 #   ${catkin_LIBRARIES}
 # )
-
 # target_link_libraries(matlab_linker_node
 #   ${catkin_LIBRARIES}
 # )

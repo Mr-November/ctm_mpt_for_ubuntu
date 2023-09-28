@@ -94,11 +94,20 @@
                 output="screen"/> -->
 
         <!-- Track pose. -->
-        <node pkg="ctm_mpt_kernal"
+        <!-- <node pkg="ctm_mpt_kernal"
                 type="track_pose_node"
                 name="track_pose_node"
+                output="screen"/> -->
+        <!-- Track path. -->
+        <!-- <node pkg="ctm_mpt_kernal"
+                type="track_path_node"
+                name="track_path_node"
+                output="screen"/> -->
+        <!-- Motor terminal. -->
+        <node pkg="ctm_mpt_kernal"
+                type="motor_terminal_node"
+                name="motor_terminal_node"
                 output="screen"/>
-
         <!-- Plot torque curve. -->
         <node pkg="rqt_gui"
                 type="rqt_gui"

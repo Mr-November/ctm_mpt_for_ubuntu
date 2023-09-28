@@ -58,11 +58,8 @@ public:
 	// Set motor velocity.
 	void mtrSetVel(const uint8_t id,
 				   const int32_t vel, const float dur = 1.0,
-				   const uint32_t k_i = 1000000, const uint32_t k_f = 1000000);
-
-	void mtrSetVel(const uint8_t *const id,
-				   const int32_t *const vel, const float *const dur,
-				   const uint32_t *const k_i, const uint32_t *const k_f);
+				   const uint32_t k_i = 1000000, const uint32_t k_f = 1000000,
+				   const std::string mode = "EXIT_DIRECTLY");
 
 	// Get command velocity in rpm.
 	void mtrGetVel(const uint8_t id, int32_t *const vel_in_rpm, int32_t *const vel_in_hz);
@@ -90,8 +87,6 @@ private:
 	serial::Serial mtr_serial_;
 
 	const uint8_t sampling_rate_ = 50;
-
-	// const bool gossip_ = false;
 
 protected:
 	bool mtrAtPos_(const uint8_t id);

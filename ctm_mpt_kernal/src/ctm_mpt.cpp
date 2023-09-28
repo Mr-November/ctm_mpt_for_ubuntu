@@ -166,7 +166,7 @@ void CtmMpt::mtrInit(const uint8_t id)
 	this->mtrWrite_(cmd_rst_paras, 19);
 	this->mtrReset(id);
 
-	ROS_INFO_STREAM("Motors are initialised.");
+	ROS_INFO("(id %d) Motor is initialised.", id);
 
 	return;
 }
@@ -182,6 +182,8 @@ void CtmMpt::mtrInit(const uint8_t *const id, const size_t n)
 								0x00, 0x00, 0x4e, 0x20, // Acceleration = 20kHz.
 								0x00, 0x00, 0x00, 0x00 }; // Starting speed = 0Hz.
 	size_t k = 0;
+	std::string str("id");
+	char id_k[4];
 
 	for (k = 0; k < n; k++)
 	{
@@ -190,10 +192,13 @@ void CtmMpt::mtrInit(const uint8_t *const id, const size_t n)
 
 		this->mtrWrite_(cmd_reso, 15);
 		this->mtrWrite_(cmd_rst_paras, 19);
+
+		sprintf(id_k, " %d", id[k]);
+		str += id_k;
 	}
 	this->mtrReset(id, n);
 	
-	ROS_INFO_STREAM("Motors are initialised.");
+	ROS_INFO_STREAM("(" << str << ") Motors are initialised.");
 
 	return;
 }
@@ -216,7 +221,7 @@ void CtmMpt::mtrReset(const uint8_t *const id, const size_t n)
 	uint8_t cmd_rst[] = { 0x00, 0x06, 0x00, 0x7d, 0x00, 0x10 };
 	size_t k = 0;
 	bool all_at_home = false;
-	// std::string str("id");
+	std::string str("id");
 	char id_k[4];
 
 	for (k = 0; k < n; k++)
@@ -225,7 +230,7 @@ void CtmMpt::mtrReset(const uint8_t *const id, const size_t n)
 		this->mtrWrite_(cmd_rst, 6);
 
 		sprintf(id_k, " %d", id[k]);
-		// str += id_k;
+		str += id_k;
 	}
 
 	while (!all_at_home)
@@ -237,7 +242,7 @@ void CtmMpt::mtrReset(const uint8_t *const id, const size_t n)
 		}
 	}
 
-	// ROS_INFO_STREAM("(" << str << ") Motors are home.");
+	ROS_INFO_STREAM("(" << str << ") Motors are home.");
 
 	return;
 }
@@ -433,7 +438,8 @@ void CtmMpt::mtrGetPos(const uint8_t id, int32_t *const pos)
 
 void CtmMpt::mtrSetVel(const uint8_t id,
 						const int32_t vel, const float dur,
-						const uint32_t k_i, const uint32_t k_f)
+						const uint32_t k_i, const uint32_t k_f,
+						const std::string mode)
 {
 	uint8_t cmd_vel_paras[] = { 0x00, 0x10, 0x18, 0x00, 0x00, 0x0a, 0x14,
 								0x00, 0x00, 0x00, 0x10, // Continuous (speed control).
@@ -453,10 +459,22 @@ void CtmMpt::mtrSetVel(const uint8_t id,
 	utils::loadUint32ToUint8Array(&k_f, cmd_vel_paras + 23);
 
 	this->mtrWrite_(cmd_vel_paras, 27);
-	this->mtrWrite_(cmd_vel_on, 6);
 
-	ros::Duration(dur).sleep(); // sleep for a certain amount of time.
-	this->mtrWrite_(cmd_vel_off, 6);
+	if (mode == "UNTIL_ARRIVED")
+	{
+		this->mtrWrite_(cmd_vel_on, 6);
+		ros::Duration(dur).sleep(); // sleep for a certain amount of time.
+		this->mtrWrite_(cmd_vel_off, 6);
+	}
+	else if (mode == "EXIT_DIRECTLY")
+	{
+		// It is dangerous. Do not forget to stop.
+		this->mtrWrite_(cmd_vel_on, 6);
+	}
+	else
+	{
+		ROS_WARN("You just gave a wrong mode of `mtrSetVel`.");
+	}
 
 	return;
 }
