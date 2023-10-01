@@ -170,7 +170,9 @@ private:
     // Position feedback PID controller.
     CtrlPID<N_DIM> pfbc {1, 0.0, 0.0, 1.0};
     // Velocity feedforward and position feedback PID controller.
-    CtrlPID<N_DIM> vfwpfbc {0.01, 0.0, 0.0, 1.0};
+    CtrlPID<N_DIM> vfwpfbc {1.0, 0.0, 0.0, 1.0};
+    // Number of inner loop control during one path tracking action.
+    const size_t NILC = 10;
 
     // Initial transformation.
     Eigen::Matrix4f invT_zero //= Eigen::Matrix4f::Identity();

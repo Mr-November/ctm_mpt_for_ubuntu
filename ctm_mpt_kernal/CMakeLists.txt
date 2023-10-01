@@ -137,10 +137,6 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-# add_executable(vrt_cntlr_node src/vrt_cntlr_main.cpp src/kinematics.cpp)
-# add_executable(mtr_cntlr_node src/mtr_cntlr_main.cpp src/ctm_mpt.cpp src/ctm_mpt2.cpp src/utils.cpp)
-# add_executable(trq_cntlr_node src/trq_cntlr_main.cpp src/ctm_mpt.cpp src/ctm_mpt2.cpp src/utils.cpp)
-# add_executable(test_node src/test.cpp src/ctm_mpt.cpp src/ctm_mpt2.cpp src/utils.cpp)
 add_executable(track_pose_node
   src/track_pose.cpp
   src/ctm_mpt.cpp
@@ -179,18 +175,6 @@ add_executable(motor_terminal_node
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-# target_link_libraries(vrt_cntlr_node
-#   ${catkin_LIBRARIES}
-# )
-# target_link_libraries(mtr_cntlr_node
-#   ${catkin_LIBRARIES}
-# )
-# target_link_libraries(trq_cntlr_node
-#   ${catkin_LIBRARIES}
-# )
-# target_link_libraries(test_node
-#   ${catkin_LIBRARIES}
-# )
 target_link_libraries(track_pose_node
   ${catkin_LIBRARIES}
 )
@@ -200,27 +184,6 @@ target_link_libraries(track_path_node
 target_link_libraries(motor_terminal_node
   ${catkin_LIBRARIES}
 )
-# target_link_libraries(vrt_controller_node
-#   ${catkin_LIBRARIES}
-# )
-# target_link_libraries(vrt_plan_node
-#   ${catkin_LIBRARIES}
-# )
-# target_link_libraries(matlab_linker_node
-#   ${catkin_LIBRARIES}
-# )
-# target_link_libraries(vrt_path_node
-#   ${catkin_LIBRARIES}
-# )
-# target_link_libraries(controller_path_node
-#   ${catkin_LIBRARIES}
-# )
-# target_link_libraries(controller_point_node
-#   ${catkin_LIBRARIES}
-# )
-# target_link_libraries(end_set_node
-#   ${catkin_LIBRARIES}
-# )
 #############
 ## Install ##
 #############

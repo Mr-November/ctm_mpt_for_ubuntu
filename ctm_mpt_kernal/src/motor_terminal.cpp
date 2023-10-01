@@ -27,6 +27,7 @@ int main(int argc, char** argv)
     // m.print();
     // m.zero();
     m.print();
+    // m.reset();
     // m.relax(10);
     ros::Duration(5).sleep();
     std::cout << "Start?";

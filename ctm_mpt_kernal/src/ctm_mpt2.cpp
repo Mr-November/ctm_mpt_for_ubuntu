@@ -733,47 +733,46 @@ void CtmMpt2::trackXi(void)
 
 void CtmMpt2::trackPose(void)
 {
-    // Calculate the error.
-    Eigen::Matrix<float, 6, 1> V = getError();
-    std::cout << "V = " << V.transpose() << std::endl;
+    for (size_t i = 0; i < this->NILC; i++)
+    {
+        // Calculate the error.
+        Eigen::Matrix<float, 6, 1> V = getError();
+        std::cout << "V = " << V.transpose() << std::endl;
 
-    // Calculate the Jacobian and then xi difference,
-    // provided with three different methods.
-    // -------------------------------------------------
-    // Gradient.
-    // Eigen::Matrix<float, 6, 6> J = this->jacobian3cc(1/this->L1, 1/this->L2, 1/this->L3, this->xi);
-    // Eigen::Matrix<float, N_DIM, 1> xi_diff = J.transpose() * V;
-    // Newton-Raphson.
-    // Eigen::Matrix<float, 6, 6> J = this->jacobian3cc(this->L1, this->L2, this->L3, this->xi);
-    // Eigen::Matrix<float, N_DIM, 1> xi_diff = (J.transpose() * J).inverse() * J.transpose() * V;
-    // Levenberg-Marquardt.
-    Eigen::Matrix<float, 6, 6> J = this->jacobian3cc(this->L1, this->L2, this->L3, this->xi);
-    Eigen::Matrix<float, 6, 6> M = J.transpose() * J;
-    float damp = M.diagonal().maxCoeff();
-    Eigen::Matrix<float, N_DIM, 1> xi_diff = (M + damp*Eigen::Matrix<float, 6, 6>::Identity()).inverse() * J.transpose() * V;
-    // -------------------------------------------------
+        // Calculate the Jacobian and then xi difference,
+        // provided with three different methods.
+        // -------------------------------------------------
+        // Gradient.
+        // Eigen::Matrix<float, 6, 6> J = this->jacobian3cc(1/this->L1, 1/this->L2, 1/this->L3, this->xi);
+        // Eigen::Matrix<float, N_DIM, 1> xi_diff = J.transpose() * V;
+        // Newton-Raphson.
+        // Eigen::Matrix<float, 6, 6> J = this->jacobian3cc(this->L1, this->L2, this->L3, this->xi);
+        // Eigen::Matrix<float, N_DIM, 1> xi_diff = (J.transpose() * J).inverse() * J.transpose() * V;
+        // Levenberg-Marquardt.
+        // 10.1 try to move to another computer:
+        // Send this->xi
+        Eigen::Matrix<float, 6, 6> J = this->jacobian3cc(this->L1, this->L2, this->L3, this->xi);
+        Eigen::Matrix<float, 6, 6> M = J.transpose() * J;
+        float damp = M.diagonal().maxCoeff();
+        Eigen::Matrix<float, N_DIM, 1> xi_diff = (M + damp*Eigen::Matrix<float, 6, 6>::Identity()).inverse() * J.transpose() * V;
+        //wait for receiving this->xi_diff
+        // -------------------------------------------------
+        std::cout << "xi_diff = " << xi_diff.transpose() << std::endl;
 
-    std::cout << "xi = " << this->xi.transpose() << std::endl;
-    std::cout << "xi_diff = " << xi_diff.transpose() << std::endl;
+        // Get cable length difference.
+        Eigen::Matrix<float, N_CABLE, 1> diff = this->getCableLengthDiff(xi_diff);
+        std::cout << "diff = " << diff.transpose() << std::endl;
+        std::cout << "-------------------------------" << std::endl;
 
-    // Calculate the controller output.
-    Eigen::Matrix<float, N_DIM, 1> xi_diff_fb = this->pfbc.pid(xi_diff);
-    std::cout << "xi_diff_fb = " << xi_diff_fb.transpose() << std::endl;
+        // Move the motors!
+        this->move(diff.data());
 
-    // Get cable length difference.
-    Eigen::Matrix<float, N_CABLE, 1> diff = this->getCableLengthDiff(xi_diff_fb);
-    std::cout << "diff = " << diff.transpose() << std::endl;
-    std::cout << "-------------------------------" << std::endl;
+        // Update xi.
+        this->xi += xi_diff;
 
-    // Move the motors!
-    std::getchar();
-    this->move(diff.data());
-
-    // Update xi.
-    this->xi += xi_diff_fb;
-
-    // Save.
-    this->saveData(xi_diff_fb, diff);
+        // Save.
+        this->saveData(xi_diff, diff);
+    }
 
     return;
 }
@@ -856,52 +855,55 @@ void CtmMpt2::trackPath2(void)
     else
     {
         printf("xis_index = %d\n", this->xis_index);
-
-        // Currently at the i-th target pose.
-        // Calculate the error.
-        Eigen::Matrix<float, 6, 1> V = getError();
-        std::cout << "V = " << V.transpose() << std::endl;
-        
-        // Calculate the Jacobian and then xi_diff_fb,
-        // provided with three different methods.
-        // -------------------------------------------------
-        // Gradient.
-        // Eigen::Matrix<float, 6, 6> J = this->jacobian3cc(1/this->L1, 1/this->L2, 1/this->L3, this->xi);
-        // Eigen::Matrix<float, N_DIM, 1> xi_diff = J.transpose() * V;
-        // Newton-Raphson.
-        // Eigen::Matrix<float, 6, 6> J = this->jacobian3cc(this->L1, this->L2, this->L3, this->xi);
-        // Eigen::Matrix<float, N_DIM, 1> xi_diff = (J.transpose() * J).inverse() * J.transpose() * V;
-        // Levenberg-Marquardt.
-        Eigen::Matrix<float, 6, 6> J = this->jacobian3cc(this->L1, this->L2, this->L3, this->xi);
-        Eigen::Matrix<float, 6, 6> M = J.transpose() * J;
-        float damp = M.diagonal().maxCoeff();
-        Eigen::Matrix<float, N_DIM, 1> xi_diff_fb = (M + damp*Eigen::Matrix<float, 6, 6>::Identity()).inverse() * J.transpose() * V;
-        // -------------------------------------------------
-
-        // Want to track the (i+1)-th target pose.
-        this->setTargetPose((const Eigen::Matrix4f)this->Tds.block(0,4*(this->xis_index+1),4,4));
-
-        // Get the feedforward xi_diff_fw.
-        Eigen::Matrix<float, N_DIM, 1> xi_diff_fw = this->xis.col(this->xis_index+1) - this->xis.col(this->xis_index);
-
-        // Add up xi_diff_fb and xi_diff_fw.
-        Eigen::Matrix<float, N_DIM, 1> xi_diff = xi_diff_fb + xi_diff_fw;
-        std::cout << "xi_diff = " << xi_diff.transpose() << std::endl;
-
-        // Get cable length difference.
-        Eigen::Matrix<float, N_CABLE, 1> diff = this->getCableLengthDiff(xi_diff);
-        std::cout << "diff = " << diff.transpose() << std::endl;
-        std::cout << "-------------------------------" << std::endl;
-
-        // Move the motors!
-        std::getchar();
-        this->move(diff.data());
-
-        this->xi += xi_diff;
         this->xis_index += 1;
 
-        // Save.
-        this->saveData(xi_diff, diff);
+        // Get the feedforward xi_diff_fw.
+        Eigen::Matrix<float, N_DIM, 1> xi_diff_fw = (this->xis.col(this->xis_index) - this->xis.col(this->xis_index-1))/this->NILC;
+
+        for (size_t i = 0; i < this->NILC; i++)
+        {
+            // Currently at the (i-1)-th target pose.
+            // Want to track the i-th target pose.
+            this->setTargetPose((const Eigen::Matrix4f)this->Tds.block(0,4*(this->xis_index),4,4));
+            
+            // Calculate the error towards the i-th target pose.
+            Eigen::Matrix<float, 6, 1> Vi = getError();
+
+            // Calculate the Jacobian and then xi_diff_fb,
+            // provided with three different methods.
+            // -------------------------------------------------
+            // Gradient.
+            // Eigen::Matrix<float, 6, 6> J = this->jacobian3cc(1/this->L1, 1/this->L2, 1/this->L3, this->xi);
+            // Eigen::Matrix<float, N_DIM, 1> xi_diff_fb = J.transpose() * Vi;
+            // Newton-Raphson.
+            // This method is not stable.
+            // Eigen::Matrix<float, 6, 6> J = this->jacobian3cc(this->L1, this->L2, this->L3, this->xi);
+            // Eigen::Matrix<float, N_DIM, 1> xi_diff_fb = (J.transpose() * J).inverse() * J.transpose() * Vi;
+            // Levenberg-Marquardt.
+            Eigen::Matrix<float, 6, 6> J = this->jacobian3cc(this->L1, this->L2, this->L3, this->xi);
+            Eigen::Matrix<float, 6, 6> M = J.transpose() * J;
+            float damp = M.diagonal().maxCoeff();
+            Eigen::Matrix<float, N_DIM, 1> xi_diff_fb = (M + damp*Eigen::Matrix<float, 6, 6>::Identity()).inverse() * J.transpose() * Vi;
+            // -------------------------------------------------
+
+            // Add up xi_diff_fb and xi_diff_fw.
+            Eigen::Matrix<float, N_DIM, 1> xi_diff = xi_diff_fb + xi_diff_fw;
+            std::cout << "xi_diff_fb = " << xi_diff_fb.transpose() << std::endl;
+            std::cout << "xi_diff_fw = " << xi_diff_fw.transpose() << std::endl;
+
+            // Get cable length difference.
+            Eigen::Matrix<float, N_CABLE, 1> diff = this->getCableLengthDiff(xi_diff);
+            std::cout << "diff = " << diff.transpose() << std::endl;
+            std::cout << "-------------------------------" << std::endl;
+
+            // Move the motors!
+            this->move(diff.data());
+
+            this->xi += xi_diff;
+
+            // Save.
+            this->saveData(xi_diff, diff);
+        }
 
         return;
     }
