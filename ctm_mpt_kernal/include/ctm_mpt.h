@@ -42,24 +42,24 @@ public:
 
 	// Set motor position.
 	// Not recommended. Because wrap setting is enabled, with \pm 900 rev.
+	// If wait = true, stay until arrived.
+	// If wait = false, exit directly.
 	void mtrSetPosAbs(const uint8_t id,
 					  const int32_t pos, const int32_t vel = 1000,
-					  const uint32_t k_i = 1000000, const uint32_t k_f = 1000000,
-					  const std::string mode = "EXIT_DIRECTLY");
+					  const uint32_t k_i = 1000000, const uint32_t k_f = 1000000);
 
 	void mtrSetPosRel(const uint8_t id,
 					  const int32_t pos, const int32_t vel = 1000,
-					  const uint32_t k_i = 1000000, const uint32_t k_f = 1000000,
-					  const std::string mode = "EXIT_DIRECTLY");
+					  const uint32_t k_i = 1000000, const uint32_t k_f = 1000000);
 
 	// Get command position.
-	void mtrGetPos(const uint8_t id, int32_t *const ps);
+	void mtrGetPos(const uint8_t id, int32_t *const pos);
 
 	// Set motor velocity.
 	void mtrSetVel(const uint8_t id,
 				   const int32_t vel, const float dur = 1.0,
 				   const uint32_t k_i = 1000000, const uint32_t k_f = 1000000,
-				   const std::string mode = "EXIT_DIRECTLY");
+				   const bool wait = true);
 
 	// Get command velocity in rpm.
 	void mtrGetVel(const uint8_t id, int32_t *const vel_in_rpm, int32_t *const vel_in_hz);
@@ -98,8 +98,26 @@ private:
 
 	void snsrWrite_(const std::string& cmd);
 
-	void snsrInfoAnalyse_(const uint8_t *const data, const std::string prefix,
+	void snsrInfoAnalyse_(const uint8_t *const data,
 							float *const dst = NULL, const size_t len = 0);
 };
+
+namespace utils
+{
+    void loadInt32ToUint8Array(const int32_t* src, uint8_t* dst);
+
+    void loadUint32ToUint8Array(const uint32_t* src, uint8_t* dst);
+
+    void loadUint8ArrayToUint16(const uint8_t* src, uint16_t* dst);
+
+    void loadUint8ArrayToInt32(const uint8_t* src, int32_t* dst);
+
+    void loadUint8ArrayToFloat32(const uint8_t* src, float* dst);
+
+    void addCRC16(const uint8_t* src, uint8_t* dst, const size_t size);
+
+    void dispUint8Array(const uint8_t* src, const size_t size,
+                        const std::string& prefix);
+}
 
 #endif

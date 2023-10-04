@@ -1,0 +1,9 @@
+<launch>
+<group ns = "ctm_mpt">
+        <!-- Public feedbacks from the motion capture system. -->
+        <!-- <include file="$(find vrpn_client_ros)/launch/sample.launch"/> -->
+        
+        <node pkg="ctm_mpt_kernal" type="client_test_node" name="client_test_node" output="screen">
+        </node>
+</group>
+</launch>

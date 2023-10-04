@@ -104,14 +104,24 @@
                 name="track_path_node"
                 output="screen"/> -->
         <!-- Motor terminal. -->
+        <!-- <node pkg="ctm_mpt_kernal"
+                type="terminal_node"
+                name="terminal_node"
+                output="screen"/> -->
+        <!-- Kinematics controller and motor controller -->
         <node pkg="ctm_mpt_kernal"
-                type="motor_terminal_node"
-                name="motor_terminal_node"
+                type="kinematics_controller_node"
+                name="kinematics_controller_node"
+                output="screen"/>
+        <node pkg="ctm_mpt_kernal"
+                type="motor_controller_node"
+                name="motor_controller_node"
                 output="screen"/>
         <!-- Plot torque curve. -->
         <node pkg="rqt_gui"
                 type="rqt_gui"
-                name="plotter"/>
+                name="plotter"
+                args="--perspective-file $(find ctm_mpt_kernal)/launch/plotter.perspective"/>
                 
         <!-- <node pkg="ctm_mpt_kernal"
                 type="end_set_node"

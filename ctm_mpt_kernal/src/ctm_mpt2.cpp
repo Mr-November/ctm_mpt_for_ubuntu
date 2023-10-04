@@ -13,13 +13,13 @@
 #include <chrono>
 #include <ctime>
 
-Eigen::Matrix3f uphat(const Eigen::Vector3f V);
-Eigen::Matrix4f uphat(const Eigen::Matrix<float, N_DIM, 1> V);
-Eigen::Vector3f upvee(const Eigen::Matrix3f M);
-Eigen::Matrix<float, N_DIM, 1> upvee(const Eigen::Matrix4f M);
-Eigen::Matrix4f invt(const Eigen::Matrix4f T);
-Eigen::Matrix4f q2T(const Eigen::Quaterniond quat, Eigen::Vector3d orig);
-Eigen::Matrix<float, N_DIM, 2> jaco_c12(const float w1, const float w2, const float L);
+const Eigen::Matrix3f uphat(const Eigen::Vector3f& V);
+const Eigen::Matrix4f uphat(const Eigen::Matrix<float, N_DIM, 1>& V);
+const Eigen::Vector3f upvee(const Eigen::Matrix3f& M);
+const Eigen::Matrix<float, N_DIM, 1> upvee(const Eigen::Matrix4f& M);
+const Eigen::Matrix4f invt(const Eigen::Matrix4f& T);
+const Eigen::Matrix4f q2T(const Eigen::Quaterniond& quat, const Eigen::Vector3d& orig);
+const Eigen::Matrix<float, N_DIM, 2> jaco_c12(const float w1, const float w2, const float L);
 
 // Continuum manipulator.
 CtmMpt2::CtmMpt2()
@@ -45,11 +45,21 @@ CtmMpt2::CtmMpt2(const std::string& snsr_port_1,
                ros::NodeHandle* nh)
 : CtmMpt::CtmMpt(snsr_port_1, snsr_port_2, mtr_port)
 {
-    // Initialise the publishers.
-    this->torque_publisher = nh->advertise<std_msgs::Float32MultiArray>("torque", 100);
+    // Initialise the publisher.
+    this->torque_publisher = nh->advertise<std_msgs::Float32MultiArray>("torque", 1);
+    std_msgs::MultiArrayDimension dim;
+    dim.label = "tau";
+    dim.size = N_MOTOR;
+    dim.stride = N_MOTOR;
+    this->torque_message.layout.dim.push_back(dim);
+    this->torque_message.layout.data_offset = 0;
+    this->torque_message.data = std::vector<float>(N_MOTOR, 0.0);
+
+    // Initialise the subscribers.
     this->tf_subscriber = nh->subscribe(
-        "/ctm_mpt/vrpn_client_node/RobotTip/pose", 1,
-        &CtmMpt2::mcsCallback, this);
+        "/ctm_mpt/vrpn_client_node/RobotTip/pose", 1, &CtmMpt2::tfCallback, this
+    );
+    this->xi_subscriber = nh->subscribe("/ctm_mpt/xid", 1, &CtmMpt2::xiCallback, this);
     
     // Initialise the maximum cable velocity.
     this->L_DOT_MAX = ((Eigen::Map<const Eigen::Matrix<float, N_MOTOR, 1>> (this->VEL)).array() / (Eigen::Map<const Eigen::Matrix<float, N_MOTOR, 1>> (this->RESOLUTION)).array()).abs();
@@ -102,7 +112,7 @@ void CtmMpt2::print(const uint8_t id)
                 \n  * mtr  %6.1f Deg Celsius.\
                 \n  * pwr  %6.1f V,\
                 \n  * inv  %6.1f V.\n",
-                id,
+                (int)id,
                 pos / this->RESOLUTION[id-1], pos,
                 vel_in_rpm, vel_in_hz,
                 drv_temp * 0.1, mtr_temp * 0.1,
@@ -142,32 +152,22 @@ void CtmMpt2::print(void)
 
 bool CtmMpt2::readTorque() // and publish!
 {
-    size_t k = 0;
     bool load = false;
-    std_msgs::Float32MultiArray msg;
-    std_msgs::MultiArrayDimension dim;
-    dim.label = "tau";
-    dim.size = N_MOTOR;
-    dim.stride = N_MOTOR;
-    msg.layout.dim.push_back(dim);
-    msg.layout.data_offset = 0;
-    msg.data = std::vector<float>(N_MOTOR, 0.0);
 
     this->snsrRead(this->tau);
 
-	while (k < N_MOTOR)
+	for (size_t k = 0; k < N_MOTOR; k++)
 	{
 		this->tau[k] -= this->TORQUE_OFFSET[k];
-        msg.data.at(k) = this->tau[k];
+        this->torque_message.data.at(k) = this->tau[k];
         if (std::fabs(this->tau[k]) >= this->TORQUE_PERMITTED[k])
         {
             load = true;
-            ROS_ERROR("(id %d) Overloaded, suffering %.4f Nm.", k + 1, this->tau[k]);
+            ROS_ERROR("(id %d) Overloaded, suffering %.4f Nm.", (int)k + 1, this->tau[k]);
         }
-        k++;
 	}
 
-    this->torque_publisher.publish(msg);
+    this->torque_publisher.publish(this->torque_message);
 
     if (load)
     {
@@ -196,7 +196,7 @@ void CtmMpt2::init(void)
     ROS_INFO_STREAM("INITIALISED.");
 
     // Save.
-    this->saveData();
+    this->saveData(ros::Time::now().toSec());
     this->printPose();
 
     // Adjust sensors to zero.
@@ -237,20 +237,22 @@ void CtmMpt2::zero(void)
     return;
 }
 
-void CtmMpt2::move(const uint8_t id, const float dist)
+void CtmMpt2::move(const uint8_t id, const float dist, bool wait)
 {
     this->mtrSetPosRel(id, dist * this->RESOLUTION[id-1],
-                        this->VEL[id-1], this->ACC_START[id-1], this->ACC_BRAKE[id-1],
-                        "EXIT_DIRECTLY");
-    while (ros::ok() && !this->mtrAtPos_(id))
-	{
-        this->readTorque();
-	}
+                        this->VEL[id-1], this->ACC_START[id-1], this->ACC_BRAKE[id-1]);
+    if (wait)
+    {
+        while (ros::ok() && !this->mtrAtPos_(id))
+        {
+            this->readTorque();
+        }
+    }
 
     return;
 }
 
-void CtmMpt2::move(const float *const dist)
+void CtmMpt2::move(const float *const dist, bool wait)
 {
     size_t idcs[N_MOTOR] = {0};
     size_t idx = 0; // idx = idcs[i];
@@ -290,21 +292,23 @@ void CtmMpt2::move(const float *const dist)
     {
         idx = idcs[i++];
         this->mtrSetPosRel(this->ID_MOTOR[idx], dist[idx] * this->RESOLUTION[idx],
-                            this->VEL[idx], this->ACC_START[idx], this->ACC_BRAKE[idx],
-                            "EXIT_DIRECTLY");
+                            this->VEL[idx], this->ACC_START[idx], this->ACC_BRAKE[idx]);
     }
 
-	while (ros::ok() && !all_at_pos)
-	{
-        this->readTorque();
+    if (wait)
+    {
+        while (ros::ok() && !all_at_pos)
+        {
+            this->readTorque();
 
-		all_at_pos = true;
-        i = 0;
-		while (i < N_MOTOR)
-		{
-			all_at_pos &= this->mtrAtPos_(this->ID_MOTOR[idcs[i++]]);
-		}
-	}
+        	all_at_pos = true;
+            i = 0;
+        	while (i < N_MOTOR)
+        	{
+        		all_at_pos &= this->mtrAtPos_(this->ID_MOTOR[idcs[i++]]);
+        	}
+        }
+    }
 
     return;
 }
@@ -312,7 +316,7 @@ void CtmMpt2::move(const float *const dist)
 void CtmMpt2::run(const uint8_t id, const float dist_dot)
 {
     this->mtrSetVel(id, dist_dot * this->RESOLUTION[id-1], 0.0f,
-                    this->ACC_START[id-1], this->ACC_BRAKE[id-1], "EXIT_DIRECTLY");
+                    this->ACC_START[id-1], this->ACC_BRAKE[id-1], false);
 
     return;
 }
@@ -340,7 +344,7 @@ void CtmMpt2::run(const float *const dist_dot)
     {
         idx = idcs[i++];
         this->mtrSetVel(this->ID_MOTOR[idx], dist_dot[idx] * this->RESOLUTION[idx], 0.0f,
-                        this->ACC_START[idx], this->ACC_BRAKE[idx], "EXIT_DIRECTLY");
+                        this->ACC_START[idx], this->ACC_BRAKE[idx], false);
     }
 
     return;
@@ -362,34 +366,18 @@ void CtmMpt2::snooze(const float tttt)
 
 void CtmMpt2::relax(const float dist)
 {
-    size_t i = 0;
-    bool all_at_pos = false;
-
-    while (i < N_MOTOR)
+    float ds[N_MOTOR] = {0.0};
+    for (size_t i = 0; i < N_MOTOR; i++)
     {
-        this->mtrSetPosRel(this->ID_MOTOR[i], dist * this->RESOLUTION[i],
-                            this->VEL[i], this->ACC_START[i], this->ACC_BRAKE[i],
-                            "EXIT_DIRECTLY");
-        i++;
+        ds[i] = dist;
     }
-	while (!all_at_pos)
-	{
-        size_t j = 0;
-
-        this->readTorque();
-
-		all_at_pos = true;
-		while (j < N_MOTOR)
-		{
-			all_at_pos &= this->mtrAtPos_(this->ID_MOTOR[j++]);
-		}
-	}
+    move(ds, true);
 
     return;
 }
 
 // Motion capture system callback.
-Eigen::Matrix3f uphat(const Eigen::Vector3f V)
+const Eigen::Matrix3f uphat(const Eigen::Vector3f& V)
 {
     return Eigen::Matrix3f {
         {  0.0, -V(2),  V(1)},
@@ -397,7 +385,7 @@ Eigen::Matrix3f uphat(const Eigen::Vector3f V)
         {-V(1),  V(0),   0.0},
     };
 }
-Eigen::Matrix4f uphat(const Eigen::Matrix<float, 6, 1> V)
+const Eigen::Matrix4f uphat(const Eigen::Matrix<float, 6, 1>& V)
 {
     return Eigen::Matrix4f {
         {  0.0, -V(2),  V(1), V(3)},
@@ -406,35 +394,35 @@ Eigen::Matrix4f uphat(const Eigen::Matrix<float, 6, 1> V)
         {  0.0,   0.0,   0.0,  0.0},
     };
 }
-Eigen::Vector3f upvee(const Eigen::Matrix3f M)
+const Eigen::Vector3f upvee(const Eigen::Matrix3f& M)
 {
 	return Eigen::Vector3f {
         -M(1,2), M(0,2), -M(0,1)
     };
 }
-Eigen::Matrix<float, 6, 1> upvee(const Eigen::Matrix4f M)
+const Eigen::Matrix<float, 6, 1> upvee(const Eigen::Matrix4f& M)
 {
     return Eigen::Matrix<float, 6, 1> {
         -M(1,2), M(0,2), -M(0,1), M(0,3), M(1,3), M(2,3)
     };
 }
-Eigen::Matrix4f invt(const Eigen::Matrix4f T)
+const Eigen::Matrix4f invt(const Eigen::Matrix4f& T)
 {
 	Eigen::Matrix4f invT = Eigen::Matrix4f::Identity(4,4);
 	invT.block(0,0,3,3) = T.block(0,0,3,3).transpose();
 	invT.block(0,3,3,1) = -T.block(0,0,3,3).transpose()*T.block(0,3,3,1);
 	return invT;
 }
-Eigen::Matrix4f q2T(const Eigen::Quaterniond quat, const Eigen::Vector3d orig)
+const Eigen::Matrix4f q2T(const Eigen::Quaterniond& quat, const Eigen::Vector3d& orig)
 {
 	Eigen::Matrix4d T = Eigen::Matrix4d::Zero();
     T.block(0,0,3,3) = quat.toRotationMatrix();
     T.block(0,3,3,1) = orig;
     T(3,3) = 1.0;
-	return T.cast<float>();
+	return T.cast<const float>();
 }
 
-void CtmMpt2::mcsCallback(const geometry_msgs::PoseStamped& tfmsg)
+void CtmMpt2::tfCallback(const geometry_msgs::PoseStamped& tfmsg)
 {
     // Origin x, y, z.
     Eigen::Vector3d orig {
@@ -459,20 +447,37 @@ void CtmMpt2::mcsCallback(const geometry_msgs::PoseStamped& tfmsg)
     return;
 }
 
+void CtmMpt2::xiCallback(const std_msgs::Float32MultiArray& ximsg)
+{
+    const Eigen::Matrix<float, N_DIM, 1> xi_cur(ximsg.data.data());
+    this->xi_diff_fw = (xi_cur - this->xid) * KRDCR;
+    this->xid = xi_cur;
+    this->Td = this->fk3cc(this->L1, this->L2, this->L3, xi_cur);
+
+    std::cout << "Callback ----------------------" << std::endl
+        << "Set target xi: " << std::endl
+        << "xid = " << this->xid.transpose() << std::endl
+        << "Set target pose: " << std::endl
+        << "Td = " << this->Td << std::endl
+        << "-------------------------------" << std::endl;
+
+    return;
+}
+
 void CtmMpt2::printPose(void)
 {
-    std::cout << "Print pose --------------------" << std::endl;
     ros::spinOnce();
-    std::cout << "Tb = " << this->Tb << std::endl;
-    std::cout << "-------------------------------" << std::endl;
+    std::cout << "Print pose --------------------" << std::endl
+        << "Tb = " << this->Tb << std::endl
+        << "-------------------------------" << std::endl;
 
     return;
 }
 
 // Forward kinematics.
-Eigen::Matrix4f CtmMpt2::fk3cc(
+const Eigen::Matrix4f CtmMpt2::fk3cc(
     const float L1, const float L2, const float L3,
-    const Eigen::Matrix<float, N_DIM, 1> Xi)
+    const Eigen::Matrix<float, N_DIM, 1>& Xi)
 {
     Eigen::Matrix<float, 6, 1> x_3{Xi(4,0), Xi(5,0), 0, 0, 0, L3};
     Eigen::Matrix<float, 6, 1> x_2{Xi(2,0), Xi(3,0), 0, 0, 0, L2};
@@ -486,7 +491,7 @@ Eigen::Matrix4f CtmMpt2::fk3cc(
 }
 
 // Calculate the Jacobian matrix.
-Eigen::Matrix<float, 6, 2> jaco_c12(const float w1, const float w2, const float L)
+const Eigen::Matrix<float, 6, 2> jaco_c12(const float w1, const float w2, const float L)
 {
 	Eigen::Vector3f w {w1, w2, 0};
 	Eigen::Matrix<float, 6, 3> Jc = Eigen::Matrix<float, 6, 3>::Zero();
@@ -523,9 +528,9 @@ Eigen::Matrix<float, 6, 2> jaco_c12(const float w1, const float w2, const float 
 	return Jc.block(0,0,6,2);
 }
 
-Eigen::Matrix<float, 6, 6> CtmMpt2::jacobian3cc(
+const Eigen::Matrix<float, 6, 6> CtmMpt2::jacobian3cc(
     const float L1, const float L2, const float L3,
-    const Eigen::Matrix<float, N_DIM, 1> Xi)
+    const Eigen::Matrix<float, N_DIM, 1>& Xi)
 {
 	Eigen::Matrix<float, 6, 2> J3 = jaco_c12(Xi(4, 0), Xi(5, 0), L3);
 	Eigen::Matrix<float, 6, 2> J2 = jaco_c12(Xi(2, 0), Xi(3, 0), L2);
@@ -551,32 +556,46 @@ Eigen::Matrix<float, 6, 6> CtmMpt2::jacobian3cc(
 	return J;
 }
 
-Eigen::Matrix<float, N_CABLE, 1> CtmMpt2::getCableLengthDiff(
-    const Eigen::Matrix<float, N_DIM, 1> xi_diff)
+const Eigen::Matrix<float, N_DIM, 1> CtmMpt2::getXi2(void)
+{
+    Eigen::Matrix<float, N_MOTOR, 1> pos_mm;
+    int32_t pos = 0;
+
+    for (size_t i = 0; i < N_MOTOR; i++)
+    {
+        this->mtrGetPos(this->ID_MOTOR[i], &pos);
+        pos_mm(i,0) = pos / this->RESOLUTION[i];
+    }
+    
+    return (this->PUTC.transpose() * this->PUTC).inverse() * this->PUTC.transpose() * pos_mm;
+}
+
+const Eigen::Matrix<float, N_CABLE, 1> CtmMpt2::getCableLengthDiff(
+    const Eigen::Matrix<float, N_DIM, 1>& xi_diff)
 {
     return this->PUTC * xi_diff;
 }
 
-Eigen::Matrix<float, N_CABLE, 1> CtmMpt2::getCableLengthDot(
-    const Eigen::Matrix<float, N_DIM, 1> xi_dot)
+const Eigen::Matrix<float, N_CABLE, 1> CtmMpt2::getCableLengthDot(
+    const Eigen::Matrix<float, N_DIM, 1>& xi_dot)
 {
     return this->PUTC * xi_dot;
 }
 
-Eigen::Matrix<float, 6, 1> CtmMpt2::getError(void)
+const Eigen::Matrix<float, 6, 1> CtmMpt2::getError(void)
 {
-    std::cout << "Get error ---------------------" << std::endl;
-    ros::spinOnce();
-    std::cout << "Tb = " << this->Tb << std::endl;
-    std::cout << "Td = " << this->Td << std::endl;
-    std::cout << "-------------------------------" << std::endl;
+    std::cout << "Get error ---------------------" << std::endl
+        << "Tb = " << std::endl << this->Tb << std::endl
+        << "Td = " << std::endl << this->Td << std::endl
+        << "-------------------------------" << std::endl;
 
     return upvee((const Eigen::Matrix4f)(invt(this->Tb) * this->Td).log());
 }
 
 void CtmMpt2::saveData(
-    Eigen::Matrix<float, N_DIM, 1> xi_diff,
-    Eigen::Matrix<float, N_CABLE, 1> diff)
+    const double t,
+    const Eigen::Matrix<float, N_DIM, 1>& xi_diff,
+    const Eigen::Matrix<float, N_CABLE, 1>& diff)
 {
     static const Eigen::IOFormat fmt(
         Eigen::FullPrecision,
@@ -589,8 +608,8 @@ void CtmMpt2::saveData(
         "," // matSuffix
     );
 
-    ros::spinOnce();
-    this->file_log << upvee((const Eigen::Matrix4f)this->Tb.log()).transpose().format(fmt)
+    this->file_log << Eigen::Matrix<double, 1, 1>(t).format(fmt)
+        << upvee((const Eigen::Matrix4f)this->Tb.log()).transpose().format(fmt)
         << upvee((const Eigen::Matrix4f)this->Td.log()).transpose().format(fmt)
         << xi_diff.transpose().format(fmt)
         << diff.transpose().format(fmt)
@@ -599,7 +618,7 @@ void CtmMpt2::saveData(
     return;
 }
 
-void CtmMpt2::setTargetTorque(const Eigen::Matrix<float, N_CABLE, 1> Tau)
+void CtmMpt2::setTargetTorque(const Eigen::Matrix<float, N_CABLE, 1>& Tau)
 {
     this->taud = Tau;
 
@@ -616,37 +635,17 @@ void CtmMpt2::setTargetTorque(const float Tau)
     return;
 }
 
-void CtmMpt2::setTargetXi(const Eigen::Matrix<float, N_DIM, 1> Xi)
-{
-    this->xid = Xi;
-    std::cout << "Set target xi: " << std::endl;
-    std::cout << "xid = " << this->xid.transpose() << std::endl;
-    std::cout << "-------------------------------" << std::endl;
-
-    return;
-}
-
-void CtmMpt2::setTargetPose(const Eigen::Matrix4f P)
+void CtmMpt2::setTargetPose(const Eigen::Matrix4f& P)
 {
     this->Td = P;
-    std::cout << "Set target pose: " << std::endl;
-    std::cout << "Td = " << this->Td << std::endl;
+    std::cout << "Set target pose ---------------" << std::endl;
+    std::cout << "Td = " << std::endl << this->Td << std::endl;
     std::cout << "-------------------------------" << std::endl;
 
     return;
 }
 
-void CtmMpt2::setTargetPose(const Eigen::Matrix<float, N_DIM, 1> Xi)
-{
-    this->Td = this->fk3cc(this->L1, this->L2, this->L3, Xi);
-    std::cout << "Set target pose: " << std::endl;
-    std::cout << "Td = " << this->Td << std::endl;
-    std::cout << "-------------------------------" << std::endl;
-
-    return;
-}
-
-void CtmMpt2::setTargetPath(const Eigen::Matrix<float, N_DIM, Eigen::Dynamic> Xis)
+void CtmMpt2::setTargetPath(const Eigen::Matrix<float, N_DIM, Eigen::Dynamic>& Xis)
 {
     this->xis = Xis;
     this->xis_cols = Xis.cols();
@@ -656,7 +655,7 @@ void CtmMpt2::setTargetPath(const Eigen::Matrix<float, N_DIM, Eigen::Dynamic> Xi
     {
         this->Tds.block(0,4*i,4,4) = this->fk3cc(this->L1, this->L2, this->L3, this->xis.col(i));
     }
-    std::cout << "Set target path: " << std::endl;
+    std::cout << "Set target path ---------------" << std::endl;
     std::cout << "xis_cols = " << this->xis_cols << std::endl;
     std::cout << "-------------------------------" << std::endl;
 
@@ -680,7 +679,7 @@ void CtmMpt2::allocateTime(void)
 
     return;
 }
-
+/*
 void CtmMpt2::trackTorque(void)
 {
     this->readTorque();
@@ -691,42 +690,16 @@ void CtmMpt2::trackTorque(void)
     {
         tau_diff(i, 0) = this->tau[i] - this->taud[i];
     }
-    std::cout << "tau_diff = " << tau_diff.transpose() << std::endl;
+    std::cout << "tau_diff = " << std::endl << tau_diff.transpose() << std::endl;
 
     // Calculate the controller output.
     Eigen::Matrix<float, N_CABLE, 1> diff = this->ffbc.pid(tau_diff);
-    std::cout << "diff = " << diff.transpose() << std::endl;
+    std::cout << "diff = " << std::endl << diff.transpose() << std::endl;
     std::cout << "-------------------------------" << std::endl;
 
     // Move the motors!
     std::getchar();
     this->move(diff.data());
-
-    return;
-}
-
-void CtmMpt2::trackXi(void)
-{
-    Eigen::Matrix<float, N_DIM, 1> xi_diff = this->xid - this->xi;
-
-    // Get cable length difference.
-    Eigen::Matrix<float, N_CABLE, 1> diff = this->getCableLengthDiff(xi_diff);
-    std::cout << "diff = " << diff.transpose() << std::endl;
-
-    // Move the motors!
-    std::getchar();
-    this->move(diff.data());
-
-    // Calculate the error.
-    Eigen::Matrix<float, 6, 1> V = getError();
-    std::cout << "V = " << V.transpose() << std::endl;
-    std::cout << "-------------------------------" << std::endl;
-
-    // Update xi.
-    this->xi += xi_diff;
-
-    // Save.
-    this->saveData(xi_diff, diff);
 
     return;
 }
@@ -737,11 +710,11 @@ void CtmMpt2::trackPose(void)
     {
         // Calculate the error.
         Eigen::Matrix<float, 6, 1> V = getError();
-        std::cout << "V = " << V.transpose() << std::endl;
+        std::cout << "V = " << std::endl << V.transpose() << std::endl;
 
         // Calculate the Jacobian and then xi difference,
         // provided with three different methods.
-        // -------------------------------------------------
+        // *************************************************
         // Gradient.
         // Eigen::Matrix<float, 6, 6> J = this->jacobian3cc(1/this->L1, 1/this->L2, 1/this->L3, this->xi);
         // Eigen::Matrix<float, N_DIM, 1> xi_diff = J.transpose() * V;
@@ -755,13 +728,13 @@ void CtmMpt2::trackPose(void)
         Eigen::Matrix<float, 6, 6> M = J.transpose() * J;
         float damp = M.diagonal().maxCoeff();
         Eigen::Matrix<float, N_DIM, 1> xi_diff = (M + damp*Eigen::Matrix<float, 6, 6>::Identity()).inverse() * J.transpose() * V;
-        //wait for receiving this->xi_diff
-        // -------------------------------------------------
-        std::cout << "xi_diff = " << xi_diff.transpose() << std::endl;
+        // Wait for receiving this->xi_diff
+        // *************************************************
+        std::cout << "xi_diff = " << std::endl << xi_diff.transpose() << std::endl;
 
         // Get cable length difference.
         Eigen::Matrix<float, N_CABLE, 1> diff = this->getCableLengthDiff(xi_diff);
-        std::cout << "diff = " << diff.transpose() << std::endl;
+        std::cout << "diff = " << std::endl << diff.transpose() << std::endl;
         std::cout << "-------------------------------" << std::endl;
 
         // Move the motors!
@@ -771,7 +744,7 @@ void CtmMpt2::trackPose(void)
         this->xi += xi_diff;
 
         // Save.
-        this->saveData(xi_diff, diff);
+        this->saveData(ros::Time::now().toSec(), xi_diff, diff);
     }
 
     return;
@@ -799,7 +772,7 @@ void CtmMpt2::trackPath(void)
     }
     else
     {
-        printf("xis_index = %d\n", this->xis_index);
+        printf("xis_index = %d\n", (int)this->xis_index);
 
         // Calculate the error.
         Eigen::Matrix<float, 6, 1> V = getError();
@@ -826,7 +799,7 @@ void CtmMpt2::trackPath(void)
         this->xis_index += 1;
 
         // Save.
-        this->saveData(xi_diff_fw, diff);
+        this->saveData(ros::Time::now().toSec(), xi_diff_fw, diff);
 
         return;
     }
@@ -854,7 +827,7 @@ void CtmMpt2::trackPath2(void)
     }
     else
     {
-        printf("xis_index = %d\n", this->xis_index);
+        printf("xis_index = %d\n", (int)this->xis_index);
         this->xis_index += 1;
 
         // Get the feedforward xi_diff_fw.
@@ -871,7 +844,7 @@ void CtmMpt2::trackPath2(void)
 
             // Calculate the Jacobian and then xi_diff_fb,
             // provided with three different methods.
-            // -------------------------------------------------
+            // *************************************************
             // Gradient.
             // Eigen::Matrix<float, 6, 6> J = this->jacobian3cc(1/this->L1, 1/this->L2, 1/this->L3, this->xi);
             // Eigen::Matrix<float, N_DIM, 1> xi_diff_fb = J.transpose() * Vi;
@@ -884,7 +857,7 @@ void CtmMpt2::trackPath2(void)
             Eigen::Matrix<float, 6, 6> M = J.transpose() * J;
             float damp = M.diagonal().maxCoeff();
             Eigen::Matrix<float, N_DIM, 1> xi_diff_fb = (M + damp*Eigen::Matrix<float, 6, 6>::Identity()).inverse() * J.transpose() * Vi;
-            // -------------------------------------------------
+            // *************************************************
 
             // Add up xi_diff_fb and xi_diff_fw.
             Eigen::Matrix<float, N_DIM, 1> xi_diff = xi_diff_fb + xi_diff_fw;
@@ -902,13 +875,111 @@ void CtmMpt2::trackPath2(void)
             this->xi += xi_diff;
 
             // Save.
-            this->saveData(xi_diff, diff);
+            this->saveData(ros::Time::now().toSec(), xi_diff, diff);
         }
 
         return;
     }
 }
+*/
+void CtmMpt2::trackXi(void)
+{
+    Eigen::Matrix<float, N_DIM, 1> xi_diff = this->xid - this->xi;
 
+    // Get cable length difference.
+    Eigen::Matrix<float, N_CABLE, 1> diff = this->getCableLengthDiff(xi_diff);
+    std::cout << "diff = " << std::endl << diff.transpose() << std::endl;
+
+    // Move the motors!
+    this->move(diff.data(), true);
+
+    // Calculate the error.
+    Eigen::Matrix<float, 6, 1> V = getError();
+    std::cout << "V = " << V.transpose() << std::endl;
+    std::cout << "-------------------------------" << std::endl;
+
+    // Update xi.
+    this->xi += xi_diff;
+    this->xi2 = this->getXi2();
+    std::cout << "xi = " << std::endl << this->xi.transpose() << std::endl;
+    std::cout << "xi2 = " << std::endl << this->xi2.transpose() << std::endl;
+
+    // Save.
+    this->saveData(ros::Time::now().toSec(), xi_diff, diff);
+
+    return;
+}
+
+void CtmMpt2::track(void)
+{
+    ros::Time tt = ros::Time::now();
+    // Calculate the error between the current and the target transformation.
+    Eigen::Matrix<float, 6, 1> Vi = getError();
+    std::cout << "error ------------------------------- "
+        << (ros::Time::now()-tt).toSec() << " sec" << std::endl;
+    tt = ros::Time::now();
+
+    // Calculate the Jacobian and then xi_diff_fb,
+    // provided with three different methods.
+    // *************************************************
+    // Gradient.
+    // Eigen::Matrix<float, 6, 6> J = this->jacobian3cc(1/this->L1, 1/this->L2, 1/this->L3, this->xi);
+    // Eigen::Matrix<float, N_DIM, 1> xi_diff_fb = J.transpose() * Vi;
+    // Newton-Raphson.
+    // This method is not stable.
+    // Eigen::Matrix<float, 6, 6> J = this->jacobian3cc(this->L1, this->L2, this->L3, this->xi);
+    // Eigen::Matrix<float, N_DIM, 1> xi_diff_fb = (J.transpose() * J).inverse() * J.transpose() * Vi;
+    // Levenberg-Marquardt.
+    Eigen::Matrix<float, 6, 6> J = this->jacobian3cc(this->L1, this->L2, this->L3, this->xi);
+    Eigen::Matrix<float, 6, 6> M = J.transpose() * this->W * J;
+    float damp = M.diagonal().maxCoeff();
+    Eigen::Matrix<float, N_DIM, 1> xi_diff_fb = (M + damp*Eigen::Matrix<float, 6, 6>::Identity()).inverse() * J.transpose() * this->W * Vi;
+    // *************************************************
+    std::cout << "jacobian, xi_diff_fb ------------------------------- "
+        << (ros::Time::now()-tt).toSec() << " sec" << std::endl;
+    tt = ros::Time::now();
+
+    // Add up xi_diff_fb and xi_diff_fw.
+    Eigen::Matrix<float, N_DIM, 1> xi_diff = xi_diff_fb + this->xi_diff_fw;
+    std::cout << "xi_diff_fb = " << std::endl << xi_diff_fb.transpose() << std::endl;
+    std::cout << "xi_diff_fw = " << std::endl << this->xi_diff_fw.transpose() << std::endl;
+    std::cout << "xi_diff ------------------------------- "
+        << (ros::Time::now()-tt).toSec() << " sec" << std::endl;
+    tt = ros::Time::now();
+
+    // Get cable length difference.
+    Eigen::Matrix<float, N_CABLE, 1> diff = this->getCableLengthDiff(xi_diff);
+    std::cout << "diff = " << std::endl << diff.transpose() << std::endl;
+    std::cout << "diff ------------------------------- "
+        << (ros::Time::now()-tt).toSec() << " sec" << std::endl;
+    tt = ros::Time::now();
+
+    std::cout << "xi = " << std::endl << this->xi.transpose() << std::endl;
+    this->xi2 = getXi2();
+    std::cout << "xi2 = " << std::endl << this->xi2.transpose() << std::endl;
+    std::cout << "xi2 ------------------------------- "
+        << (ros::Time::now()-tt).toSec() << " sec" << std::endl;
+    tt = ros::Time::now();
+
+    // Move the motors!
+    this->move(diff.data(), false);
+    std::cout << "move ------------------------------- "
+        << (ros::Time::now()-tt).toSec() << " sec" << std::endl;
+    tt = ros::Time::now();
+
+    this->xi += xi_diff;
+    std::cout << "assign xi ------------------------------- "
+        << (ros::Time::now()-tt).toSec() << " sec" << std::endl;
+    tt = ros::Time::now();
+
+    // Save.
+    this->saveData(ros::Time::now().toSec(), xi_diff, diff);
+    std::cout << "save ------------------------------- "
+        << (ros::Time::now()-tt).toSec() << " sec" << std::endl;
+
+    return;
+}
+/*
 // Velocity feedforward, no position feedback.
 void CtmMpt2::trackTrajectory(void)
 {
@@ -1009,12 +1080,11 @@ void CtmMpt2::trackTrajectory2(void)
 
     return;
 }
-
+*/
 
 
 template <const size_t N_C>
-CtrlPID<N_C>::CtrlPID(const float kp, const float ki, const float kd,
-                    const float dt)
+CtrlPID<N_C>::CtrlPID(const float kp, const float ki, const float kd, const float dt)
 {
     this->dt_ = dt;
     this->one_over_dt_ = 1.0 / dt;
@@ -1036,7 +1106,8 @@ CtrlPID<N_C>::~CtrlPID()
 }
 
 template <const size_t N_C>
-Eigen::Matrix<float, N_C, 1> CtrlPID<N_C>::pid(const Eigen::Matrix<float, N_C, 1> err)
+const Eigen::Matrix<float, N_C, 1> CtrlPID<N_C>::pid(
+    const Eigen::Matrix<float, N_C, 1>& err)
 {
     Eigen::Matrix<float, N_C, 1> derr = Eigen::Matrix<float, N_C, 1>::Zero();
     Eigen::Matrix<float, N_C, 1> out = Eigen::Matrix<float, N_C, 1>::Zero();
@@ -1056,3 +1127,11 @@ Eigen::Matrix<float, N_C, 1> CtrlPID<N_C>::pid(const Eigen::Matrix<float, N_C, 1
 
     return out;
 }
+
+
+
+
+
+
+
+

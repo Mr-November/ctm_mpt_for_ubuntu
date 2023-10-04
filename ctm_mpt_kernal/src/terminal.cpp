@@ -26,6 +26,7 @@ int main(int argc, char** argv)
 
     // m.print();
     // m.zero();
+    m.init();
     m.print();
     // m.reset();
     // m.relax(10);
@@ -42,8 +43,8 @@ int main(int argc, char** argv)
         std::cin >> id;
         std::cout << "Distance: ";
         std::cin >> dist;
-        m.move(id, dist);
-        ROS_INFO("Motor %d travels %.2f mm.\n", id, dist);
+        m.move(id, dist, true);
+        ROS_INFO("Motor %d travels %.2f mm.\n", (int)id, dist);
         m.printPose();
     }
 

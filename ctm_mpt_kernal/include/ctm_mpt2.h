@@ -5,7 +5,9 @@
 #include <ros/ros.h>
 #include <iostream>
 #include <fstream>
+#include <std_msgs/Float32MultiArray.h>
 #include <Eigen/Dense>
+#include <unsupported/Eigen/Splines>
 #include <geometry_msgs/Quaternion.h>
 #include <geometry_msgs/PoseStamped.h>
 
@@ -17,17 +19,48 @@ const size_t N_MOTOR = 9;
 const size_t N_CABLE = 9;
 // Dimensionality of xi.
 const size_t N_DIM = 6;
+// Kinematics rate KR. Unit: Hz.
+// Control rate CR. Unit: Hz.
+const float KR = 0.5;
+const float KRDCR = 1.0/4.0;
+const float CR = 2;
+
+template <const size_t N_SF>
+class SplineFunction
+{
+public:
+    SplineFunction(const Eigen::Matrix<double, 1, Eigen::Dynamic>& t_vec,
+        const Eigen::Matrix<double, N_SF, Eigen::Dynamic>& x_vec)
+    : spline_(Eigen::SplineFitting<Eigen::Spline<double,N_SF>>::Interpolate(
+            x_vec,
+            // No more than cubic spline, but accept short vectors.
+            std::min<int>(x_vec.cols()-1, 3),
+            t_vec
+            )
+        )
+    {
+        return;
+    }
+
+    const Eigen::Matrix<float, N_SF, 1> operator()(const double t) const
+    {
+        return this->spline_(t).template cast<const float>();
+    }
+
+
+private:
+    Eigen::Spline<double, N_SF> spline_;
+};
 
 template <const size_t N_C>
 class CtrlPID
 {
 public:
-    CtrlPID(const float kp, const float ki, const float kd,
-        const float dt);
+    CtrlPID(const float kp, const float ki, const float kd, const float dt);
 
     ~CtrlPID();
 
-    Eigen::Matrix<float, N_C, 1> pid(const Eigen::Matrix<float, N_C, 1> err);
+    const Eigen::Matrix<float, N_C, 1> pid(const Eigen::Matrix<float, N_C, 1>& err);
     
 private:
     float dt_;
@@ -65,8 +98,8 @@ public:
     void init(void); // Initialise motors and sensors.
     void reset(void); // Return to zero positions.
     void zero(void); // Adjust zero.
-    void move(const float *const dist); // Relative linear distances. Unit: mm.
-    void move(const uint8_t id, const float dist); // Move a single motor.
+    void move(const float *const dist, bool wait); // Relative linear distances. Unit: mm.
+    void move(const uint8_t id, const float dist, bool wait); // Move a single motor.
     // Function run() is dangerous.
     // Must call it together with snooze() and stop().
     // Current maximum value: 1.31947 mm/s.
@@ -77,35 +110,31 @@ public:
     // Unit: second.
     void snooze(const float tttt);
 
-    void setTargetTorque(const Eigen::Matrix<float, N_CABLE, 1> Tau);
+    void setTargetTorque(const Eigen::Matrix<float, N_CABLE, 1>& Tau);
     void setTargetTorque(const float Tau);
     // Set through a homogeneous transformation matrix.
-    void setTargetPose(const Eigen::Matrix4f P = Eigen::Matrix4f::Zero());
-    // Set through a xi, with forward kinematics.
-    void setTargetPose(const Eigen::Matrix<float, N_DIM, 1> Xi);
-    void setTargetXi(const Eigen::Matrix<float, N_DIM, 1> Xi =
-                        Eigen::Matrix<float, N_DIM, 1>::Zero());
+    void setTargetPose(const Eigen::Matrix4f& P = Eigen::Matrix4f::Zero());
     // Give a series of xi.
-    void setTargetPath(const Eigen::Matrix<float, N_DIM, Eigen::Dynamic> Xis);
+    void setTargetPath(const Eigen::Matrix<float, N_DIM, Eigen::Dynamic>& Xis);
     // Call after setting a target path to allocate time for each via point.
     // Unit: second.
     void allocateTime(void);
 
-    void trackTorque(void);
-    void trackPose(void);
+    // void trackTorque(void);
+    // void trackPose(void);
     void trackXi(void);
-    // Position feedforward.
-    void trackPath(void);
-    void trackPath2(void);
-    // Velocity feedforward, no position feedback.
-    void trackTrajectory(void);
-    // Velocity feedforward and position feedback.
-    void trackTrajectory2(void);
 
-    // Control time interval. Unit: second.
-    // There are another time interval when declaring the controllers.
-    // Please keep the values the same.
-    const float CTI = 1.0;
+    // Position feedforward.
+    // void trackPath(void);
+    // void trackPath2(void);
+
+    // Motor controller tracking procedure.
+    void track(void);
+
+    // Velocity feedforward, no position feedback.
+    // void trackTrajectory(void);
+    // Velocity feedforward and position feedback.
+    // void trackTrajectory2(void);
 
 private:
     // Model.
@@ -115,20 +144,23 @@ private:
     const float L3 = 256;
 
     // Return the end pose (forward kinematics).
-    Eigen::Matrix4f fk3cc(
+    const Eigen::Matrix4f fk3cc(
         const float L1,
         const float L2,
         const float L3,
-        const Eigen::Matrix<float, N_DIM, 1> Xi
+        const Eigen::Matrix<float, N_DIM, 1>& Xi
     );
 
     // Return the Jacobian matrix.
-    Eigen::Matrix<float, N_DIM, N_DIM> jacobian3cc(
+    const Eigen::Matrix<float, N_DIM, N_DIM> jacobian3cc(
         const float L1,
         const float L2,
         const float L3,
-        const Eigen::Matrix<float, N_DIM, 1> Xi
+        const Eigen::Matrix<float, N_DIM, 1>& Xi
     );
+
+    // Return the estimated xi through the command position feedback of motors.
+    const Eigen::Matrix<float, N_DIM, 1> getXi2(void);
     
     // State variables.
     // Torque.
@@ -142,12 +174,16 @@ private:
     Eigen::Matrix<float, N_DIM, 1> xid = Eigen::Matrix<float, N_DIM, 1>::Zero();
     // Current xi.
     Eigen::Matrix<float, N_DIM, 1> xi = Eigen::Matrix<float, N_DIM, 1>::Zero();
+    // This xi is estimated through absolute command position feedback of motors.
+    Eigen::Matrix<float, N_DIM, 1> xi2 = Eigen::Matrix<float, N_DIM, 1>::Zero();
 
     // For a desired pose.
     // Desired transformation.
     Eigen::Matrix4f Td = Eigen::Matrix4f::Identity();
     // Body transformation.
     Eigen::Matrix4f Tb = Eigen::Matrix4f::Identity();
+    // Weight matrix, for optimisation.
+    const Eigen::DiagonalMatrix<float, N_DIM> W {5.0, 5.0, 5.0, 1.0, 1.0, 1.0};
 
     // For a desired path.
     Eigen::Matrix<float, N_DIM, Eigen::Dynamic> xis;
@@ -161,8 +197,9 @@ private:
     // Log files and write log function.
     std::ofstream file_log;
     void saveData(
-        Eigen::Matrix<float, N_DIM, 1> xi_diff = Eigen::Matrix<float, N_DIM, 1>::Zero(),
-        Eigen::Matrix<float, N_CABLE, 1> diff = Eigen::Matrix<float, N_CABLE, 1>::Zero()
+        const double t,
+        const Eigen::Matrix<float, N_DIM, 1>& xi_diff = Eigen::Matrix<float, N_DIM, 1>::Zero(),
+        const Eigen::Matrix<float, N_CABLE, 1>& diff = Eigen::Matrix<float, N_CABLE, 1>::Zero()
     );
 
     // Force feedback PID controller.
@@ -184,23 +221,27 @@ private:
     };
 
     // Motion capture system setup.
-    ros::Subscriber tf_subscriber;
-
     // Get body transformation with the motion capture system.
-    void mcsCallback(const geometry_msgs::PoseStamped& tfmsg);
+    ros::Subscriber tf_subscriber;
+    void tfCallback(const geometry_msgs::PoseStamped& tfmsg);
+
+    // Receive desired xi from the kinematics controller.
+    ros::Subscriber xi_subscriber;
+    void xiCallback(const std_msgs::Float32MultiArray& ximsg);
+    Eigen::Matrix<float, N_DIM, 1> xi_diff_fw = Eigen::Matrix<float, N_DIM, 1>::Zero();
 
     // Get robot tip error.
-    Eigen::Matrix<float, 6, 1> getError(void);
+    const Eigen::Matrix<float, 6, 1> getError(void);
 
     // Calculate the cable length difference.
     // Output: length difference. Unit: mm.
     // Input: xi difference.
-    Eigen::Matrix<float, N_CABLE, 1> getCableLengthDiff(
-        const Eigen::Matrix<float, N_DIM, 1> xi_diff
+    const Eigen::Matrix<float, N_CABLE, 1> getCableLengthDiff(
+        const Eigen::Matrix<float, N_DIM, 1>& xi_diff
     );
     // Based on my theory, these two functions have the same expression.
-    Eigen::Matrix<float, N_CABLE, 1> getCableLengthDot(
-        const Eigen::Matrix<float, N_DIM, 1> xi_dot
+    const Eigen::Matrix<float, N_CABLE, 1> getCableLengthDot(
+        const Eigen::Matrix<float, N_DIM, 1>& xi_dot
     );
     // Maximum cable length derivative.
     // Calculated by element-wise VEL / RESOLUTION.
@@ -221,6 +262,7 @@ private:
 
     // Torque sensors setup.
     ros::Publisher torque_publisher;
+    std_msgs::Float32MultiArray torque_message;
 
     const float TORQUE_PERMITTED[N_MOTOR] = {
         3.5, 3.5, 3.5, 3.5, 3.5, 3.5, 3.5, 3.5, 3.5

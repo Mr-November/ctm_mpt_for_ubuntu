@@ -3,7 +3,6 @@
 #include <iostream>
 #include <string>
 #include "ctm_mpt.h"
-#include "utils.h"
 
 CtmMpt::CtmMpt()
 {
@@ -136,7 +135,7 @@ void CtmMpt::mtrDebug(void)
 	utils::loadUint8ArrayToUint16(cmd_read_reg + 4, &n_reg_to_read_for_0x03);
 	bytes_read = this->mtr_serial_.read(rsp, 5 + 2 * n_reg_to_read_for_0x03);
 
-	printf("Bytes read from motors: %d.\n", bytes_read);
+	printf("Bytes read from motors: %d.\n", (int)bytes_read);
 	utils::dispUint8Array(rsp, bytes_read, "Full response: ");
 
 
@@ -327,8 +326,7 @@ void CtmMpt::mtrZero(const uint8_t *const id, const size_t n)
 // Not recommended. Because wrap setting is enabled, with \pm 900 rev (900,000 step).
 void CtmMpt::mtrSetPosAbs(const uint8_t id,
 							const int32_t pos, const int32_t vel,
-							const uint32_t k_i, const uint32_t k_f,
-							const std::string mode)
+							const uint32_t k_i, const uint32_t k_f)
 {
 	uint8_t cmd_pos_paras[] = { 0x00, 0x10, 0x18, 0x00, 0x00, 0x0a, 0x14,
 								0x00, 0x00, 0x00, 0x01, // Absolute positioning.
@@ -348,33 +346,16 @@ void CtmMpt::mtrSetPosAbs(const uint8_t id,
 	utils::loadUint32ToUint8Array(&k_i, cmd_pos_paras + 19);
 	utils::loadUint32ToUint8Array(&k_f, cmd_pos_paras + 23);
 
-	if (mode == "UNTIL_ARRIVED")
-	{
-		this->mtrWrite_(cmd_pos_paras, 27);
-		this->mtrWrite_(cmd_pos_on, 6);
-		this->mtrWrite_(cmd_pos_off, 6);
-
-		while (!this->mtrAtPos_(id));
-		ROS_INFO("(id %d) Motor has arrived.", id);
-	}
-	else if (mode == "EXIT_DIRECTLY")
-	{
-		this->mtrWrite_(cmd_pos_paras, 27);
-		this->mtrWrite_(cmd_pos_on, 6);
-		this->mtrWrite_(cmd_pos_off, 6);
-	}
-	else
-	{
-		ROS_WARN("You just gave a wrong mode of `mtrSetPosAbs`.");
-	}
+	this->mtrWrite_(cmd_pos_paras, 27);
+	this->mtrWrite_(cmd_pos_on, 6);
+	this->mtrWrite_(cmd_pos_off, 6);
 
 	return;
 }
 
 void CtmMpt::mtrSetPosRel(const uint8_t id,
 							const int32_t pos, const int32_t vel,
-							const uint32_t k_i, const uint32_t k_f,
-							const std::string mode)
+							const uint32_t k_i, const uint32_t k_f)
 {
 	uint8_t cmd_pos_paras[] = { 0x00, 0x10, 0x18, 0x00, 0x00, 0x0a, 0x14,
 								0x00, 0x00, 0x00, 0x02, // Incremental positioning (based on command position).
@@ -394,25 +375,9 @@ void CtmMpt::mtrSetPosRel(const uint8_t id,
 	utils::loadUint32ToUint8Array(&k_i, cmd_pos_paras + 19);
 	utils::loadUint32ToUint8Array(&k_f, cmd_pos_paras + 23);
 
-	if (mode == "UNTIL_ARRIVED")
-	{
-		this->mtrWrite_(cmd_pos_paras, 27);
-		this->mtrWrite_(cmd_pos_on, 6);
-		this->mtrWrite_(cmd_pos_off, 6);
-
-		while (!this->mtrAtPos_(id));
-		ROS_INFO("(id %d) Motor has arrived.", id);
-	}
-	else if (mode == "EXIT_DIRECTLY")
-	{
-		this->mtrWrite_(cmd_pos_paras, 27);
-		this->mtrWrite_(cmd_pos_on, 6);
-		this->mtrWrite_(cmd_pos_off, 6);
-	}
-	else
-	{
-		ROS_WARN("You just gave a wrong mode of `mtrSetPosRel`.");
-	}
+	this->mtrWrite_(cmd_pos_paras, 27);
+	this->mtrWrite_(cmd_pos_on, 6);
+	this->mtrWrite_(cmd_pos_off, 6);
 
 	return;
 }
@@ -439,7 +404,7 @@ void CtmMpt::mtrGetPos(const uint8_t id, int32_t *const pos)
 void CtmMpt::mtrSetVel(const uint8_t id,
 						const int32_t vel, const float dur,
 						const uint32_t k_i, const uint32_t k_f,
-						const std::string mode)
+						const bool wait)
 {
 	uint8_t cmd_vel_paras[] = { 0x00, 0x10, 0x18, 0x00, 0x00, 0x0a, 0x14,
 								0x00, 0x00, 0x00, 0x10, // Continuous (speed control).
@@ -459,21 +424,12 @@ void CtmMpt::mtrSetVel(const uint8_t id,
 	utils::loadUint32ToUint8Array(&k_f, cmd_vel_paras + 23);
 
 	this->mtrWrite_(cmd_vel_paras, 27);
-
-	if (mode == "UNTIL_ARRIVED")
+	this->mtrWrite_(cmd_vel_on, 6); // It is dangerous. Do not forget to stop.
+	if (wait)
 	{
-		this->mtrWrite_(cmd_vel_on, 6);
 		ros::Duration(dur).sleep(); // sleep for a certain amount of time.
 		this->mtrWrite_(cmd_vel_off, 6);
-	}
-	else if (mode == "EXIT_DIRECTLY")
-	{
-		// It is dangerous. Do not forget to stop.
-		this->mtrWrite_(cmd_vel_on, 6);
-	}
-	else
-	{
-		ROS_WARN("You just gave a wrong mode of `mtrSetVel`.");
+		ROS_INFO("(id %d) Motor has been stopped.", id);
 	}
 
 	return;
@@ -569,27 +525,15 @@ void CtmMpt::snsrRead(float *const dst)
 	// printf("Bytes read from (the first) sensors: %d.\n", bytes_read);
 	// utils::dispUint8Array(data_1, bytes_read, "Full response: ");
 
-	if (dst == NULL)
-	{
-		this->snsrInfoAnalyse_(data_1, "Group 1");
-	}
-	else
-	{
-		this->snsrInfoAnalyse_(data_1, "Group 1", dst, 6);
-	}
-
 	// Collect and parse data from the second sensors.
 	bytes_read = this->snsr_serial_2_.read(data_2, 31);
 	// printf("Bytes read from (the second) sensors: %d.\n", bytes_read);
 	// utils::dispUint8Array(data_2, bytes_read, "Full response: ");
 
-	if (dst == NULL)
+	if (dst != NULL)
 	{
-		this->snsrInfoAnalyse_(data_2, "Group 2");
-	}
-	else
-	{
-		this->snsrInfoAnalyse_(data_2, "Group 2", dst + 6, 3);
+		this->snsrInfoAnalyse_(data_1, dst, 6);
+		this->snsrInfoAnalyse_(data_2, dst + 6, 3);
 	}
 
 	return;
@@ -776,7 +720,7 @@ bool CtmMpt::mtrAtHome_(const uint8_t id)
 	return at_home;
 }
 
-void CtmMpt::snsrInfoAnalyse_(const uint8_t *const data, const std::string prefix,
+void CtmMpt::snsrInfoAnalyse_(const uint8_t *const data,
 								float *const dst, const size_t n)
 {	
 	uint16_t pkg_len = 0;
@@ -793,29 +737,129 @@ void CtmMpt::snsrInfoAnalyse_(const uint8_t *const data, const std::string prefi
 	}
 
 	// Package length.
-	utils::loadUint8ArrayToUint16(data + 2, &pkg_len);
+	// utils::loadUint8ArrayToUint16(data + 2, &pkg_len);
 	// printf("Package length:  %d Bytes.\n", pkg_len);
 
 	// Package number.
-	utils::loadUint8ArrayToUint16(data + 4, &pkg_num);
+	// utils::loadUint8ArrayToUint16(data + 4, &pkg_num);
 	// printf("Package number:  No.%d.\n", pkg_num);
 
 	// Sensor value.
 	for (i = 0; i < ch_size; i++)
 	{
 		utils::loadUint8ArrayToFloat32(data + 4 * i + 6, ch_val + i);
-	}
-	// std::cout << prefix << " channel: ( ";
-	for (i = 0; i < ch_size; i++)
-	{
-		if (dst != NULL && i < n)
+		if (i < n)
 		{
 			*(dst + i) = ch_val[i];
 		}
-		// printf("%.4f ", ch_val[i]);
 	}
-	// std::cout << ")." << std::endl;
 	// printf("Correction code: %02x.\n\n", data[30]); // Correction code.
 
 	return;
+}
+
+void utils::loadInt32ToUint8Array(const int32_t* src, uint8_t* dst)
+{
+    const size_t size = 4;
+    size_t i = 0;
+
+    for (i = 0; i < size; i++)
+	{
+		*(dst + i) = *((const uint8_t*)src + 3 - i);
+	}
+
+    return;
+}
+
+void utils::loadUint32ToUint8Array(const uint32_t* src, uint8_t* dst)
+{
+    const size_t size = 4;
+    size_t i = 0;
+
+    for (i = 0; i < size; i++)
+	{
+		*(dst + i) = *((const uint8_t*)src + 3 - i);
+	}
+
+    return;
+}
+
+void utils::loadUint8ArrayToUint16(const uint8_t* src, uint16_t* dst)
+{
+	*((uint8_t*)dst) = *(src + 1);
+    *((uint8_t*)dst + 1) = *src;
+
+    return;
+}
+
+void utils::loadUint8ArrayToInt32(const uint8_t* src, int32_t* dst)
+{
+	const size_t size = 4;
+    size_t i = 0;
+
+    for (i = 0; i < size; i++)
+	{
+		*((uint8_t*)dst + i) = *(src + 3 - i);
+	}
+
+	return;
+}
+
+void utils::loadUint8ArrayToFloat32(const uint8_t* src, float* dst)
+{
+    const size_t size = 4;
+    size_t i = 4;
+
+    for (i = 0; i < size; i++)
+	{
+		*((uint8_t*)dst + i) = *(src + i);
+	}
+
+    return;
+}
+
+void utils::addCRC16(const uint8_t* src, uint8_t* dst, const size_t size)
+{
+	uint16_t crc = 0xffff; // CRC16-MODBUS.
+    size_t i = 0, j = 0;
+
+	//Add check.
+    for (i = 0; i < size; i++)
+	{
+		*(dst + i) = *(src + i);
+	}
+
+	for (i = 0; i < size; i++)
+	{
+		crc ^= (dst[i] & 0x00ff);
+		for (j = 0; j < 8; j++)
+		{
+			if (crc & 0x01)
+			{
+				crc >>= 1;
+				crc ^= 0xa001;
+			}
+			else
+			{
+				crc >>= 1;
+			}
+		}
+	}
+	*(dst + size) = crc;
+	*(dst + size + 1) = crc >> 8;
+
+    return;
+}
+
+void utils::dispUint8Array(const uint8_t* src, const size_t size,
+						   const std::string& prefix)
+{
+	size_t i = 0;
+
+	std::cout << prefix;
+	for (i = 0; i < size; i++)
+	{
+		printf("%02x ", src[i]);
+	}
+	std::cout << "." << std::endl << std::endl;
 }
