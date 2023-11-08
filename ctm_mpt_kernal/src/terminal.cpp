@@ -26,10 +26,10 @@ int main(int argc, char** argv)
 
     // m.print();
     // m.zero();
-    m.init();
-    m.print();
+    // m.print();
+    // m.init();
     // m.reset();
-    // m.relax(10);
+    m.relax(10);
     ros::Duration(5).sleep();
     std::cout << "Start?";
     std::getchar();

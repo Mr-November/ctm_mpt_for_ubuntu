@@ -22,8 +22,6 @@ public:
 
 public:
 	// Motor.
-	void mtrDebug(void);
-
 	void mtrInit(const uint8_t id);
 
 	void mtrInit(const uint8_t *const id, const size_t n);
@@ -52,23 +50,28 @@ public:
 					  const int32_t pos, const int32_t vel = 1000,
 					  const uint32_t k_i = 1000000, const uint32_t k_f = 1000000);
 
-	// Get command position.
-	void mtrGetPos(const uint8_t id, int32_t *const pos);
-
 	// Set motor velocity.
 	void mtrSetVel(const uint8_t id,
-				   const int32_t vel, const float dur = 1.0,
-				   const uint32_t k_i = 1000000, const uint32_t k_f = 1000000,
-				   const bool wait = true);
+				   const int32_t vel,
+				   const uint32_t k_i = 1000000, const uint32_t k_f = 1000000);
+
+	// Reading motor is very slow (approx 0.15 sec).
+	// So I write all commands in one loop, then read feedbacks in the other loop.
+	// Get command position.
+	void mtrGetPos(const uint8_t id, int32_t *const pos);
+	void mtrGetPos(const uint8_t *const id, const size_t n, int32_t *const pos);
 
 	// Get command velocity in rpm.
 	void mtrGetVel(const uint8_t id, int32_t *const vel_in_rpm, int32_t *const vel_in_hz);
+	void mtrGetVel(const uint8_t *const id, const size_t n, int32_t *const vel_in_rpm, int32_t *const vel_in_hz);
 
 	// Get temperature.
 	void mtrGetTemp(const uint8_t id, int32_t *const drv_temp, int32_t *const mtr_temp);
+	void mtrGetTemp(const uint8_t *const id, const size_t n, int32_t *const drv_temp, int32_t *const mtr_temp);
 
 	// Get voltage.
 	void mtrGetVolt(const uint8_t id, int32_t *const inv_volt, int32_t *const pwr_volt);
+	void mtrGetVolt(const uint8_t *const id, const size_t n, int32_t *const inv_volt, int32_t *const pwr_volt);
 
 	// Sensor.
 	void snsrInit(void);
@@ -91,7 +94,11 @@ private:
 protected:
 	bool mtrAtPos_(const uint8_t id);
 
+	bool mtrAtPos_(const uint8_t *const id, const size_t n);
+
 	bool mtrAtHome_(const uint8_t id);
+	
+	bool mtrAtHome_(const uint8_t *const id, const size_t n);
 
 private:
 	void mtrWrite_(const uint8_t *const cmd, const size_t len);

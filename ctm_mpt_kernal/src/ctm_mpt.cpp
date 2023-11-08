@@ -12,7 +12,7 @@ CtmMpt::CtmMpt()
 CtmMpt::CtmMpt(const std::string& port_name)
 : mtr_serial_(port_name,
 			  115200,
-			  serial::Timeout::simpleTimeout(1000),
+			  serial::Timeout::simpleTimeout(500),
 			  serial::eightbits,
 			  serial::parity_none,
 			  serial::stopbits_one)
@@ -33,13 +33,13 @@ CtmMpt::CtmMpt(const std::string& snsr_port_1,
 			   			const std::string& snsr_port_2)
 : snsr_serial_1_(snsr_port_1,
 				 115200,
-				 serial::Timeout::simpleTimeout(1000),
+				 serial::Timeout::simpleTimeout(500),
 				 serial::eightbits,
 				 serial::parity_none,
 				 serial::stopbits_one),
   snsr_serial_2_(snsr_port_2,
 				 115200,
-				 serial::Timeout::simpleTimeout(1000),
+				 serial::Timeout::simpleTimeout(500),
 				 serial::eightbits,
 				 serial::parity_none,
 				 serial::stopbits_one)
@@ -70,19 +70,19 @@ CtmMpt::CtmMpt(const std::string& snsr_port_1,
 			   			const std::string& mtr_port)
 : snsr_serial_1_(snsr_port_1,
 				 115200,
-				 serial::Timeout::simpleTimeout(1000),
+				 serial::Timeout::simpleTimeout(500),
 				 serial::eightbits,
 				 serial::parity_none,
 				 serial::stopbits_one),
   snsr_serial_2_(snsr_port_2,
 				 115200,
-				 serial::Timeout::simpleTimeout(1000),
+				 serial::Timeout::simpleTimeout(500),
 				 serial::eightbits,
 				 serial::parity_none,
 				 serial::stopbits_one),
   mtr_serial_(mtr_port,
 			  115200,
-			  serial::Timeout::simpleTimeout(1000),
+			  serial::Timeout::simpleTimeout(500),
 			  serial::eightbits,
 			  serial::parity_none,
 			  serial::stopbits_one)
@@ -119,32 +119,6 @@ CtmMpt::CtmMpt(const std::string& snsr_port_1,
 
 CtmMpt::~CtmMpt()
 {
-	return;
-}
-
-void CtmMpt::mtrDebug(void)
-{
-	// Read register.
-	uint8_t cmd_read_reg[] = { 0x01, 0x03, 0x0f, 0xe4, 0x00, 0x02 };
-	size_t bytes_read = 0;
-	uint16_t n_reg_to_read_for_0x03 = 0;
-	uint8_t rsp[64] = {};
-
-	this->mtrWrite_(cmd_read_reg, 6);
-
-	utils::loadUint8ArrayToUint16(cmd_read_reg + 4, &n_reg_to_read_for_0x03);
-	bytes_read = this->mtr_serial_.read(rsp, 5 + 2 * n_reg_to_read_for_0x03);
-
-	printf("Bytes read from motors: %d.\n", (int)bytes_read);
-	utils::dispUint8Array(rsp, bytes_read, "Full response: ");
-
-
-
-	// // Write register.
-	// uint8_t cmd_write_reg[] = { 0x02, 0x06, 0x03, 0x93, 0x00, 0x06 };
-
-	// this->mtrWrite_(cmd_write_reg, 6);
-
 	return;
 }
 
@@ -219,7 +193,6 @@ void CtmMpt::mtrReset(const uint8_t *const id, const size_t n)
 {
 	uint8_t cmd_rst[] = { 0x00, 0x06, 0x00, 0x7d, 0x00, 0x10 };
 	size_t k = 0;
-	bool all_at_home = false;
 	std::string str("id");
 	char id_k[4];
 
@@ -232,14 +205,7 @@ void CtmMpt::mtrReset(const uint8_t *const id, const size_t n)
 		str += id_k;
 	}
 
-	while (!all_at_home)
-	{
-		all_at_home = true;
-		for (k = 0; k < n; k++)
-		{
-			all_at_home &= this->mtrAtHome_(id[k]);
-		}
-	}
+	while (!this->mtrAtHome_(id, n));
 
 	ROS_INFO_STREAM("(" << str << ") Motors are home.");
 
@@ -287,10 +253,8 @@ void CtmMpt::mtrZero(const uint8_t id)
 	cmd_zero_on[0] = id;
 	cmd_zero_off[0] = id;
 	this->mtrWrite_(cmd_zero_on, 6);
-
-	ROS_INFO("(id %d) Zero out.", id);
-
 	this->mtrWrite_(cmd_zero_off, 6);
+	ROS_INFO("(id %d) Zero out.", id);
 
 	return;
 }
@@ -311,14 +275,12 @@ void CtmMpt::mtrZero(const uint8_t *const id, const size_t n)
 		sprintf(id_k, " %d", id[k]);
 		str += id_k;
 	}
-
-	ROS_INFO_STREAM("(" << str << ") Zero out.");
-
 	for (k = 0; k < n; k++)
 	{
 		cmd_zero_off[0] = id[k];
 		this->mtrWrite_(cmd_zero_off, 6);
 	}
+	ROS_INFO_STREAM("(" << str << ") Zero out.");
 
 	return;
 }
@@ -382,6 +344,49 @@ void CtmMpt::mtrSetPosRel(const uint8_t id,
 	return;
 }
 
+void CtmMpt::mtrSetVel(const uint8_t id,
+						const int32_t vel,
+						const uint32_t k_i, const uint32_t k_f)
+{
+	uint8_t cmd_vel_paras[] = { 0x00, 0x10, 0x18, 0x00, 0x00, 0x0a, 0x14,
+								0x00, 0x00, 0x00, 0x10, // Continuous (speed control).
+								0x00, 0x00, 0x00, 0x00, // Do not change.
+								0x00, 0x00, 0x00, 0x00, // Index 15-18, speed.
+								0x00, 0x00, 0x00, 0x00, // Index 19-22, starting rate.
+								0x00, 0x00, 0x00, 0x00 }; // Index 23-26, stopping deceleration.
+	uint8_t cmd_vel_fw_on[] = { 0x00, 0x06, 0x00, 0x7d, 0x40, 0x00 };
+	uint8_t cmd_vel_rv_on[] = { 0x00, 0x06, 0x00, 0x7d, 0x80, 0x00 };
+	uint32_t vel_abs = 0;
+
+	// It is dangerous. Do not forget to stop.
+	if (vel >= 0)
+	{
+		vel_abs = vel;
+		cmd_vel_paras[0] = id;
+		cmd_vel_fw_on[0] = id;
+		utils::loadUint32ToUint8Array(&vel_abs, cmd_vel_paras + 15);
+		utils::loadUint32ToUint8Array(&k_i, cmd_vel_paras + 19);
+		utils::loadUint32ToUint8Array(&k_f, cmd_vel_paras + 23);
+
+		this->mtrWrite_(cmd_vel_paras, 27);
+		this->mtrWrite_(cmd_vel_fw_on, 6);
+	}
+	else
+	{
+		vel_abs = -vel;
+		cmd_vel_paras[0] = id;
+		cmd_vel_rv_on[0] = id;
+		utils::loadUint32ToUint8Array(&vel_abs, cmd_vel_paras + 15);
+		utils::loadUint32ToUint8Array(&k_i, cmd_vel_paras + 19);
+		utils::loadUint32ToUint8Array(&k_f, cmd_vel_paras + 23);
+
+		this->mtrWrite_(cmd_vel_paras, 27);
+		this->mtrWrite_(cmd_vel_rv_on, 6);
+	}
+
+	return;
+}
+
 void CtmMpt::mtrGetPos(const uint8_t id, int32_t *const pos)
 {
 	uint8_t cmd_read_pos[] = { 0x00, 0x03, 0x00, 0xc6, 0x00, 0x02 };
@@ -391,46 +396,28 @@ void CtmMpt::mtrGetPos(const uint8_t id, int32_t *const pos)
 	cmd_read_pos[0] = id;
 	this->mtrWrite_(cmd_read_pos, 6);
 	bytes_read = this->mtr_serial_.read(rsp, 9);
-
-	// printf("Bytes read from motors: %d.\n", bytes_read);
-	// utils::dispUint8Array(rsp, bytes_read, "Full response: ");
-	
 	utils::loadUint8ArrayToInt32(rsp + 3, pos);
-	// ROS_INFO("(id %d) Stays in %d (step).", id, pos);
 
 	return;
 }
 
-void CtmMpt::mtrSetVel(const uint8_t id,
-						const int32_t vel, const float dur,
-						const uint32_t k_i, const uint32_t k_f,
-						const bool wait)
+void CtmMpt::mtrGetPos(const uint8_t *const id, const size_t n, int32_t *const pos)
 {
-	uint8_t cmd_vel_paras[] = { 0x00, 0x10, 0x18, 0x00, 0x00, 0x0a, 0x14,
-								0x00, 0x00, 0x00, 0x10, // Continuous (speed control).
-								0x00, 0x00, 0x00, 0x00, // Do not change.
-								0x00, 0x00, 0x00, 0x00, // Index 15-18, speed.
-								0x00, 0x00, 0x00, 0x00, // Index 19-22, starting rate.
-								0x00, 0x00, 0x00, 0x00 }; // Index 23-26, stopping deceleration.
-	uint8_t cmd_vel_on[] = { 0x00, 0x06, 0x00, 0x7d, 0x00, 0x08 };
-	uint8_t cmd_vel_off[] = { 0x00, 0x06, 0x00, 0x7d, 0x00, 0x20 };
+	// ros::Time tt = ros::Time::now();
+	uint8_t cmd_read_pos[] = { 0x00, 0x03, 0x00, 0xc6, 0x00, 0x02 };
+	size_t bytes_read = 0;
+	uint8_t rsp[9] = {};
+	size_t k = 0;
 
-	cmd_vel_paras[0] = id;
-	cmd_vel_on[0] = id;
-	cmd_vel_off[0] = id;
-
-	utils::loadInt32ToUint8Array(&vel, cmd_vel_paras + 15);
-	utils::loadUint32ToUint8Array(&k_i, cmd_vel_paras + 19);
-	utils::loadUint32ToUint8Array(&k_f, cmd_vel_paras + 23);
-
-	this->mtrWrite_(cmd_vel_paras, 27);
-	this->mtrWrite_(cmd_vel_on, 6); // It is dangerous. Do not forget to stop.
-	if (wait)
+	for (k = 0; k < n; k++)
 	{
-		ros::Duration(dur).sleep(); // sleep for a certain amount of time.
-		this->mtrWrite_(cmd_vel_off, 6);
-		ROS_INFO("(id %d) Motor has been stopped.", id);
+		cmd_read_pos[0] = id[k];
+		this->mtrWrite_(cmd_read_pos, 6);
+		bytes_read = this->mtr_serial_.read(rsp, 9);
+		utils::loadUint8ArrayToInt32(rsp + 3, pos + k);
 	}
+	// std::cout << "Time for position reading: "
+	// 	<< (ros::Time::now()-tt).toSec() << " sec" << std::endl;
 
 	return;
 }
@@ -444,13 +431,26 @@ void CtmMpt::mtrGetVel(const uint8_t id, int32_t *const vel_in_rpm, int32_t *con
 	cmd_read_vel[0] = id;
 	this->mtrWrite_(cmd_read_vel, 6);
 	bytes_read = this->mtr_serial_.read(rsp, 13);
-
-	// printf("Bytes read from motors: %d.\n", bytes_read);
-	// utils::dispUint8Array(rsp, bytes_read, "Full response: ");
-
 	utils::loadUint8ArrayToInt32(rsp + 3, vel_in_rpm);
 	utils::loadUint8ArrayToInt32(rsp + 7, vel_in_hz);
-	// ROS_INFO("(id %d) Travels at %d (rpm), or %d (Hz).", id, vel_in_rpm, vel_in_hz);
+
+	return;
+}
+
+void CtmMpt::mtrGetVel(const uint8_t *const id, const size_t n, int32_t *const vel_in_rpm, int32_t *const vel_in_hz)
+{
+	uint8_t cmd_read_vel[] = { 0x00, 0x03, 0x00, 0xc8, 0x00, 0x04 };
+	size_t bytes_read = 0;
+	uint8_t rsp[13] = {};
+
+	for (size_t k = 0; k < n; k++)
+	{
+		cmd_read_vel[0] = id[k];
+		this->mtrWrite_(cmd_read_vel, 6);
+		bytes_read = this->mtr_serial_.read(rsp, 13);
+		utils::loadUint8ArrayToInt32(rsp + 3, vel_in_rpm + k);
+		utils::loadUint8ArrayToInt32(rsp + 7, vel_in_hz + k);
+	}
 
 	return;
 }
@@ -464,33 +464,59 @@ void CtmMpt::mtrGetTemp(const uint8_t id, int32_t *const drv_temp, int32_t *cons
 	cmd_read_temp[0] = id;
 	this->mtrWrite_(cmd_read_temp, 6);
 	bytes_read = this->mtr_serial_.read(rsp, 13);
-
-	// printf("Bytes read from motors: %d.\n", bytes_read);
-	// utils::dispUint8Array(rsp, bytes_read, "Full response: ");
-
 	utils::loadUint8ArrayToInt32(rsp + 3, drv_temp);
 	utils::loadUint8ArrayToInt32(rsp + 7, mtr_temp);
-	// ROS_INFO("(id %d) Driver %.1f degs Celsius, motor %.1f degs Celsius.", id, drv_temp * 0.1, mtr_temp * 0.1);
+
+	return;
+}
+
+void CtmMpt::mtrGetTemp(const uint8_t *const id, const size_t n, int32_t *const drv_temp, int32_t *const mtr_temp)
+{
+	uint8_t cmd_read_temp[] = { 0x00, 0x03, 0x00, 0xf8, 0x00, 0x04 };
+	size_t bytes_read = 0;
+	uint8_t rsp[13] = {};
+
+	for (size_t k = 0; k < n; k++)
+	{
+		cmd_read_temp[0] = id[k];
+		this->mtrWrite_(cmd_read_temp, 6);
+		bytes_read = this->mtr_serial_.read(rsp, 13);
+		utils::loadUint8ArrayToInt32(rsp + 3, drv_temp + k);
+		utils::loadUint8ArrayToInt32(rsp + 7, mtr_temp + k);
+	}
 
 	return;
 }
 
 void CtmMpt::mtrGetVolt(const uint8_t id, int32_t *const inv_volt, int32_t *const pwr_volt)
 {
-	uint8_t cmd_read_temp[] = { 0x00, 0x03, 0x01, 0x46, 0x00, 0x04 };
+	uint8_t cmd_read_volt[] = { 0x00, 0x03, 0x01, 0x46, 0x00, 0x04 };
 	size_t bytes_read = 0;
 	uint8_t rsp[13] = {};
 
-	cmd_read_temp[0] = id;
-	this->mtrWrite_(cmd_read_temp, 6);
+	cmd_read_volt[0] = id;
+	this->mtrWrite_(cmd_read_volt, 6);
 	bytes_read = this->mtr_serial_.read(rsp, 13);
-
-	// printf("Bytes read from motors: %d.\n", bytes_read);
-	//utils::dispUint8Array(rsp, bytes_read, "Full response: ");
-
 	utils::loadUint8ArrayToInt32(rsp + 3, inv_volt);
 	utils::loadUint8ArrayToInt32(rsp + 7, pwr_volt);
-	// ROS_INFO("(id %d) Power supply %.1f V, inverter %.1f V.", id, inv_volt * 0.1, pwr_volt * 0.1);
+	
+	return;
+}
+
+void CtmMpt::mtrGetVolt(const uint8_t *const id, const size_t n, int32_t *const inv_volt, int32_t *const pwr_volt)
+{
+	uint8_t cmd_read_volt[] = { 0x00, 0x03, 0x01, 0x46, 0x00, 0x04 };
+	size_t bytes_read = 0;
+	uint8_t rsp[13] = {};
+
+	for (size_t k = 0; k < n; k++)
+	{
+		cmd_read_volt[0] = id[k];
+		this->mtrWrite_(cmd_read_volt, 6);
+		bytes_read = this->mtr_serial_.read(rsp, 13);
+		utils::loadUint8ArrayToInt32(rsp + 3, inv_volt + k);
+		utils::loadUint8ArrayToInt32(rsp + 7, pwr_volt + k);
+	}
 
 	return;
 }
@@ -500,11 +526,20 @@ void CtmMpt::snsrInit(void)
 	std::string cmd_stop_gsd("AT+GSD=STOP");
 	std::string cmd_paras("AT+UARTCFG=115200,8,1.00,N");
 	std::string cmd_smpf("AT+SMPF=");
+	std::string rsp;
 
 	this->snsrWrite_(cmd_stop_gsd);
+	this->snsr_serial_1_.readline(rsp, 64, "\r\n");
+	this->snsr_serial_2_.readline(rsp, 64, "\r\n");
+
 	this->snsrWrite_(cmd_paras);
+	this->snsr_serial_1_.readline(rsp, 64, "\r\n");
+	this->snsr_serial_2_.readline(rsp, 64, "\r\n");
+
 	cmd_smpf += std::to_string(this->sampling_rate_);
 	this->snsrWrite_(cmd_smpf);
+	this->snsr_serial_1_.readline(rsp, 64, "\r\n");
+	this->snsr_serial_2_.readline(rsp, 64, "\r\n");
 
 	ROS_INFO_STREAM("Sensors are initialised.");
 
@@ -515,7 +550,8 @@ void CtmMpt::snsrRead(float *const dst)
 {
 	std::string cmd_read("AT+GOD");
 	size_t bytes_read = 0;
-	uint8_t data_1[31] = { 0 }, data_2[31] = { 0 };
+	uint8_t data_1[31] = {0};
+	uint8_t data_2[31] = {0};
 
 	// Write command of reading data.
 	this->snsrWrite_(cmd_read);
@@ -610,42 +646,28 @@ void CtmMpt::snsrGetMat(void)
 void CtmMpt::mtrWrite_(const uint8_t *const cmd, const size_t len)
 {
 	uint8_t* new_cmd = new uint8_t[len + 2]; // Create a new array.
-	size_t bytes_wrote = 0, bytes_read = 0;
-	// uint16_t n_reg_to_read_for_0x03 = 0;
-	uint8_t rsp[64] = {};
+	size_t bytes_wrote = 0;
+	size_t bytes_read = 0;
+	uint8_t rsp[8];
 
 	// Add crc16 correct codes.
 	utils::addCRC16(cmd, new_cmd, len);
 
 	// Write to motors.
 	bytes_wrote = this->mtr_serial_.write(new_cmd, len + 2);
-	
+    // ros::Time tt = ros::Time::now();
 	if (new_cmd[1] != 0x03)
 	{
-		bytes_read = this->mtr_serial_.read(rsp, 8);
-		// printf("Bytes wrote to motors: %d.\n", bytes_wrote);
-		// utils::dispUint8Array(new_cmd, len + 2, "Full command: ");
-		// printf("Bytes read from motors: %d.\n", bytes_read);
-		// utils::dispUint8Array(rsp, bytes_read, "Full response: ");
+		while (this->mtr_serial_.available() != 8);
+		// bytes_read = this->mtr_serial_.read(rsp, 8);
+		this->mtr_serial_.flushInput();
 	}
-	// else
-	// {
-	// 	utils::loadUint8ArrayToUint16(cmd + 4, &n_reg_to_read_for_0x03);
-	// 	bytes_read = this->mtr_serial_.read(rsp, 5 + 2 * n_reg_to_read_for_0x03);
-
-	// 	if (this->gossip_)
-	// 	{
-	// 		printf("Bytes wrote to motors: %d.\n", bytes_wrote);
-	// 		utils::dispUint8Array(new_cmd, len + 2, "Full command: ");
-		
-	// 		printf("Bytes read from motors: %d.\n", bytes_read);
-	// 		utils::dispUint8Array(rsp, bytes_read, "Full response: ");
-	// 	}
-	// }
+	// std::cout << "motor write ------------------------------- "
+    //     << (ros::Time::now()-tt).toSec() << " sec" << std::endl;
 
 	// Delete the new array.
 	delete[] new_cmd;
-
+	
 	return;
 }
 
@@ -658,45 +680,42 @@ void CtmMpt::snsrWrite_(const std::string& cmd)
 	// Write to sensors.
 	bytes_wrote = this->snsr_serial_1_.write(new_cmd);
 	bytes_wrote = this->snsr_serial_2_.write(new_cmd);
-
-	ros::Duration(0.01).sleep(); // sleep for a certain amount of time.
 	
-	for (k = 1; k <= 2; k++)
-	{
-		// Display what had been written to sensor group k.
-		// printf("Bytes wrote to sensor group %d: %d.\n", k, bytes_wrote);
-		// std::cout << "Full command: " << new_cmd << std::endl;
+	// for (k = 1; k <= 2; k++)
+	// {
+	// 	// Display what had been written to sensor group k.
+	// 	// printf("Bytes wrote to sensor group %d: %d.\n", k, bytes_wrote);
+	// 	// std::cout << "Full command: " << new_cmd << std::endl;
 
-		// Get response from group k.
-		if (cmd != "AT+GOD" && cmd.back() != '?')
-		{
-			if (k == 1)
-			{
-				bytes_read = this->snsr_serial_1_.readline(rsp_1, 64, "\r\n");
-				// printf("Bytes read from sensor group 1: %d.\n", bytes_read);
-				// std::cout << "Full response: " << rsp_1 << std::endl;
-			}
-			else // In this case k = 2.
-			{
-				bytes_read = this->snsr_serial_2_.readline(rsp_2, 64, "\r\n");
-				// printf("Bytes read from sensor group 2: %d.\n", bytes_read);
-				// std::cout << "Full response: " << rsp_2 << std::endl;
-			}
-		}
-	}
+	// 	// Get response from group k.
+	// 	if (cmd != "AT+GOD" && cmd.back() != '?')
+	// 	{
+	// 		if (k == 1)
+	// 		{
+	// 			bytes_read = this->snsr_serial_1_.readline(rsp_1, 64, "\r\n");
+	// 			// printf("Bytes read from sensor group 1: %d.\n", bytes_read);
+	// 			// std::cout << "Full response: " << rsp_1 << std::endl;
+	// 		}
+	// 		else // In this case k = 2.
+	// 		{
+	// 			bytes_read = this->snsr_serial_2_.readline(rsp_2, 64, "\r\n");
+	// 			// printf("Bytes read from sensor group 2: %d.\n", bytes_read);
+	// 			// std::cout << "Full response: " << rsp_2 << std::endl;
+	// 		}
+	// 	}
+	// }
 
 	return;
 }
 
 bool CtmMpt::mtrAtPos_(const uint8_t id)
 {
-	bool at_pos = false;
+	bool at_pos;
 	uint8_t BIT_AT_POS = 0x40;
 	uint8_t cmd_read[] = { 0x00, 0x03, 0x00, 0x7f, 0x00, 0x01 };
-	uint8_t rsp[64] = {};
+	uint8_t rsp[7] = {};
 
 	cmd_read[0] = id;
-
 	this->mtrWrite_(cmd_read, 6);
 	this->mtr_serial_.read(rsp, 7);
 	at_pos = ( (*(rsp + 3) & BIT_AT_POS) == BIT_AT_POS );
@@ -704,19 +723,64 @@ bool CtmMpt::mtrAtPos_(const uint8_t id)
 	return at_pos;
 }
 
+bool CtmMpt::mtrAtPos_(const uint8_t *const id, const size_t n)
+{
+	bool at_pos = true;
+	uint8_t BIT_AT_POS = 0x40;
+	uint8_t cmd_read[] = { 0x00, 0x03, 0x00, 0x7f, 0x00, 0x01 };
+	uint8_t rsp[7] = {};
+	size_t k = 0;
+
+	for (k = 0; k < n; k++)
+	{
+		cmd_read[0] = id[k];
+		this->mtrWrite_(cmd_read, 6);
+		this->mtr_serial_.read(rsp, 7);
+		at_pos &= ( (*(rsp + 3) & BIT_AT_POS) == BIT_AT_POS );
+		if (!at_pos)
+		{
+			break;
+		}
+	}
+
+	return at_pos;
+}
+
 bool CtmMpt::mtrAtHome_(const uint8_t id)
 {
-	bool at_home = false;
+	bool at_home;
 	uint8_t BIT_AT_HOME = 0x10;
 	uint8_t cmd_read[] = { 0x00, 0x03, 0x00, 0x7f, 0x00, 0x01 };
-	uint8_t rsp[64] = {};
+	uint8_t rsp[7] = {};
 
 	cmd_read[0] = id;
-
 	this->mtrWrite_(cmd_read, 6);
 	this->mtr_serial_.read(rsp, 7);
 	at_home = ( (*(rsp + 4) & BIT_AT_HOME) == BIT_AT_HOME );
 
+	return at_home;
+}
+
+bool CtmMpt::mtrAtHome_(const uint8_t *const id, const size_t n)
+{
+	bool at_home = true;
+	uint8_t BIT_AT_HOME = 0x10;
+	uint8_t cmd_read[] = { 0x00, 0x03, 0x00, 0x7f, 0x00, 0x01 };
+	uint8_t rsp[7] = {};
+	size_t k = 0;
+
+	for (k = 0; k < n; k++)
+	{
+		cmd_read[0] = id[k];
+		this->mtrWrite_(cmd_read, 6);
+		this->mtr_serial_.read(rsp, 7);
+		at_home &= ( (*(rsp + 4) & BIT_AT_HOME) == BIT_AT_HOME );
+		if (!at_home)
+		{
+			break;
+		}
+	}
+	
 	return at_home;
 }
 

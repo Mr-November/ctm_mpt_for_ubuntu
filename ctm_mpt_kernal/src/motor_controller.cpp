@@ -22,49 +22,34 @@ int main(int argc, char** argv)
     //        "sensor 1",     "sensor 2",     "motor",       "ros handle".
     CtmMpt2 m("/dev/ttyUSB1", "/dev/ttyUSB2", "/dev/ttyUSB0",        &nh);
     // *************************************************
+    
 
 
+    m.init();
+    ros::Duration(20).sleep();
 
-    ros::Duration(10).sleep();
-    ros::Time tt = ros::Time::now();
+    // Go to the first point.
     ros::spinOnce();
-    std::cout << "spinOnce() ------------------------------- "
-        << (ros::Time::now()-tt).toSec() << " sec" << std::endl;
-    tt = ros::Time::now();
-    m.trackXi();
-    std::cout << "trackXi() ------------------------------- "
-        << (ros::Time::now()-tt).toSec() << " sec" << std::endl;
-    tt = ros::Time::now();
-    m.readTorque();
-    std::cout << "readTorque() ------------------------------- "
-        << (ros::Time::now()-tt).toSec() << " sec" << std::endl;
-    tt = ros::Time::now();
-    m.print();
-    std::cout << "print() ------------------------------- "
-        << (ros::Time::now()-tt).toSec() << " sec" << std::endl;
-    tt = ros::Time::now();
-
-
-
-
-
-
+    m.trackX();
+    m.trackPFB(true);
+    m.trackPFB(true);
+    m.trackPFB(true);
+    
     ROS_INFO("The motor controller is ready.");
     ros::Rate loop_rate(CR);
     while (ros::ok())
     {
-        ros::Time tt = ros::Time::now();
-        ros::spinOnce();
-        std::cout << "spinOnce() ------------------------------- "
-            << (ros::Time::now()-tt).toSec() << " sec" << std::endl;
-        tt = ros::Time::now();
-        m.track();
-        std::cout << "track() ------------------------------- "
-            << (ros::Time::now()-tt).toSec() << " sec" << std::endl;
-        tt = ros::Time::now();
-        m.readTorque();
-        std::cout << "readTorque() ------------------------------- "
-            << (ros::Time::now()-tt).toSec() << " sec" << std::endl;
+        // ros::Time tt = ros::Time::now();
+
+        // m.trackVFBFW();
+        // m.trackVFB();
+
+        m.trackPFBFW(false);
+        // m.trackPFB(false);
+
+        // std::cout << "Time for tracking: "
+        //     << (ros::Time::now()-tt).toSec() << " sec" << std::endl;
+        
         if(!loop_rate.sleep())
         {
             ROS_WARN("The motor controller did not meet the desired rate.");

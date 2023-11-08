@@ -21,36 +21,58 @@ const size_t N_CABLE = 9;
 const size_t N_DIM = 6;
 // Kinematics rate KR. Unit: Hz.
 // Control rate CR. Unit: Hz.
-const float KR = 0.5;
-const float KRDCR = 1.0/4.0;
-const float CR = 2;
+const float KR = 1.0;
+const float CR = 2.0;
+const float KRDCR = KR/CR;
 
 template <const size_t N_SF>
-class SplineFunction
+class XiSpFunc
 {
 public:
-    SplineFunction(const Eigen::Matrix<double, 1, Eigen::Dynamic>& t_vec,
-        const Eigen::Matrix<double, N_SF, Eigen::Dynamic>& x_vec)
-    : spline_(Eigen::SplineFitting<Eigen::Spline<double,N_SF>>::Interpolate(
-            x_vec,
-            // No more than cubic spline, but accept short vectors.
-            std::min<int>(x_vec.cols()-1, 3),
-            t_vec
-            )
-        )
-    {
-        return;
-    }
+    XiSpFunc(const Eigen::Matrix<double, 1, Eigen::Dynamic>& t_vec,
+        const Eigen::Matrix<double, N_SF, Eigen::Dynamic>& x_vec);
 
-    const Eigen::Matrix<float, N_SF, 1> operator()(const double t) const
-    {
-        return this->spline_(t).template cast<const float>();
-    }
+    ~XiSpFunc();
 
+    const Eigen::Matrix<float, N_SF*3, 1> operator()(const double t);
 
 private:
     Eigen::Spline<double, N_SF> spline_;
+    
+    Eigen::Matrix<double, N_SF, 1> xi_last_;
 };
+
+template <const size_t N_SF>
+XiSpFunc<N_SF>::XiSpFunc(const Eigen::Matrix<double, 1, Eigen::Dynamic>& t_vec,
+        const Eigen::Matrix<double, N_SF, Eigen::Dynamic>& x_vec)
+  : spline_(Eigen::SplineFitting<Eigen::Spline<double,N_SF>>::Interpolate(
+        x_vec,
+        // No more than cubic spline, but accept short vectors.
+        std::min<int>(x_vec.cols()-1, 3),
+        t_vec
+        )
+    ),
+    xi_last_(Eigen::Matrix<double, N_SF, 1>::Zero())
+{
+    return;
+}
+
+template <const size_t N_SF>
+XiSpFunc<N_SF>::~XiSpFunc()
+{
+    return;
+}
+
+template <const size_t N_SF>
+const Eigen::Matrix<float, N_SF*3, 1> XiSpFunc<N_SF>::operator()(const double t)
+{
+    Eigen::Matrix<double, N_SF*3, 1> xi_msg;
+    xi_msg.block(0,0,N_SF*2,1) = this->spline_.derivatives(t, 1).reshaped(N_SF*2,1);
+    xi_msg.block(N_SF*2,0,N_SF,1) = (xi_msg.block(0,0,N_SF,1) - this->xi_last_) * KRDCR;
+    this->xi_last_ = xi_msg.block(0,0,N_SF,1);
+    
+    return xi_msg.template cast<const float>();
+}
 
 template <const size_t N_C>
 class CtrlPID
@@ -76,10 +98,57 @@ private:
     bool is_first_run_ = true;
 };
 
+template <const size_t N_C>
+CtrlPID<N_C>::CtrlPID(const float kp, const float ki, const float kd, const float dt)
+{
+    this->dt_ = dt;
+    this->one_over_dt_ = 1.0 / dt;
+
+    this->kp_ = kp;
+    this->ki_ = ki;
+    this->kd_ = kd;
+
+    this->err_sum_ = Eigen::Matrix<float, N_C, 1>::Zero();
+    this->err_last_ = Eigen::Matrix<float, N_C, 1>::Zero();
+
+    return;
+}
+
+template <const size_t N_C>
+CtrlPID<N_C>::~CtrlPID()
+{
+    return;
+}
+
+template <const size_t N_C>
+const Eigen::Matrix<float, N_C, 1> CtrlPID<N_C>::pid(
+    const Eigen::Matrix<float, N_C, 1>& err)
+{
+    Eigen::Matrix<float, N_C, 1> derr = Eigen::Matrix<float, N_C, 1>::Zero();
+    Eigen::Matrix<float, N_C, 1> out = Eigen::Matrix<float, N_C, 1>::Zero();
+
+        if (this->is_first_run_)
+        {
+            this->is_first_run_ = false;
+        }
+        else
+        {
+            derr = (err - this->err_last_) * this->one_over_dt_;
+        }
+
+        this->err_sum_ += err * this->dt_;
+        this->err_last_ = err;
+        out = this->kp_ * err + this->ki_ * this->err_sum_ + this->kd_ * derr;
+
+    return out;
+}
+
 class CtmMpt2 : protected CtmMpt
 {
 public:
     CtmMpt2();
+    CtmMpt2(const std::string& mtr_port,
+            ros::NodeHandle* nh);
     CtmMpt2(const std::string& snsr_port_1,
             const std::string& snsr_port_2,
             const std::string& mtr_port,
@@ -108,31 +177,36 @@ public:
     void relax(const float dist = 10); // Set positive cable length to reduce the tension.
     // Do something else while snoozing, like publishing sensor data.
     // Unit: second.
-    void snooze(const float tttt);
+    // void snooze(const float tttt);
 
-    void setTargetTorque(const Eigen::Matrix<float, N_CABLE, 1>& Tau);
-    void setTargetTorque(const float Tau);
+    // void setTargetTorque(const Eigen::Matrix<float, N_CABLE, 1>& Tau);
+    // void setTargetTorque(const float Tau);
     // Set through a homogeneous transformation matrix.
-    void setTargetPose(const Eigen::Matrix4f& P = Eigen::Matrix4f::Zero());
+    // void setTargetPose(const Eigen::Matrix4f& P = Eigen::Matrix4f::Zero());
     // Give a series of xi.
-    void setTargetPath(const Eigen::Matrix<float, N_DIM, Eigen::Dynamic>& Xis);
+    // void setTargetPath(const Eigen::Matrix<float, N_DIM, Eigen::Dynamic>& Xis);
     // Call after setting a target path to allocate time for each via point.
     // Unit: second.
-    void allocateTime(void);
+    // void allocateTime(void);
+
+    // Motor controller tracking procedure.
+    // No feedforward.
+    void trackX(void);
+    void trackPFB(const bool wait);
+    void trackVFB(void);
+    // With feedforward.
+    void trackPFBFW(const bool wait);
+    void trackVFBFW(void);
 
     // void trackTorque(void);
-    // void trackPose(void);
-    void trackXi(void);
 
     // Position feedforward.
     // void trackPath(void);
     // void trackPath2(void);
 
-    // Motor controller tracking procedure.
-    void track(void);
-
     // Velocity feedforward, no position feedback.
     // void trackTrajectory(void);
+
     // Velocity feedforward and position feedback.
     // void trackTrajectory2(void);
 
@@ -183,33 +257,24 @@ private:
     // Body transformation.
     Eigen::Matrix4f Tb = Eigen::Matrix4f::Identity();
     // Weight matrix, for optimisation.
-    const Eigen::DiagonalMatrix<float, N_DIM> W {5.0, 5.0, 5.0, 1.0, 1.0, 1.0};
-
-    // For a desired path.
-    Eigen::Matrix<float, N_DIM, Eigen::Dynamic> xis;
-    Eigen::Matrix<float, 4, Eigen::Dynamic> Tds;
-    size_t xis_cols = 0;
-    size_t xis_index = -1;
-
-    // For a trajectory.
-    Eigen::Matrix<float, 1, Eigen::Dynamic> time_interval;
+    const Eigen::DiagonalMatrix<float, N_DIM> W {10.0, 10.0, 10.0, 1.0, 1.0, 1.0};
 
     // Log files and write log function.
     std::ofstream file_log;
     void saveData(
         const double t,
-        const Eigen::Matrix<float, N_DIM, 1>& xi_diff = Eigen::Matrix<float, N_DIM, 1>::Zero(),
-        const Eigen::Matrix<float, N_CABLE, 1>& diff = Eigen::Matrix<float, N_CABLE, 1>::Zero()
+        const Eigen::Matrix<float, N_DIM, 1>& mat_n_dim_by_1 = Eigen::Matrix<float, N_DIM, 1>::Zero(),
+        const Eigen::Matrix<float, N_CABLE, 1>& mat_n_cable_by_1 = Eigen::Matrix<float, N_CABLE, 1>::Zero()
     );
 
-    // Force feedback PID controller.
-    CtrlPID<N_CABLE> ffbc {0.5, 0.0, 0.0, 1.0};
-    // Position feedback PID controller.
-    CtrlPID<N_DIM> pfbc {1, 0.0, 0.0, 1.0};
-    // Velocity feedforward and position feedback PID controller.
-    CtrlPID<N_DIM> vfwpfbc {1.0, 0.0, 0.0, 1.0};
-    // Number of inner loop control during one path tracking action.
-    const size_t NILC = 10;
+    // // Force feedback PID controller.
+    // CtrlPID<N_CABLE> ffbc {0.5, 0.0, 0.0, 1.0};
+    // // Position feedback PID controller.
+    // CtrlPID<N_DIM> pfbc {1, 0.0, 0.0, 1.0};
+    // // Velocity feedforward and position feedback PID controller.
+    // CtrlPID<N_DIM> vfwpfbc {1.0, 0.0, 0.0, 1.0};
+    // // Number of inner loop control during one path tracking action.
+    // const size_t NILC = 10;
 
     // Initial transformation.
     Eigen::Matrix4f invT_zero //= Eigen::Matrix4f::Identity();
@@ -229,6 +294,7 @@ private:
     ros::Subscriber xi_subscriber;
     void xiCallback(const std_msgs::Float32MultiArray& ximsg);
     Eigen::Matrix<float, N_DIM, 1> xi_diff_fw = Eigen::Matrix<float, N_DIM, 1>::Zero();
+    Eigen::Matrix<float, N_DIM, 1> xi_dot_fw = Eigen::Matrix<float, N_DIM, 1>::Zero();
 
     // Get robot tip error.
     const Eigen::Matrix<float, 6, 1> getError(void);
@@ -265,7 +331,7 @@ private:
     std_msgs::Float32MultiArray torque_message;
 
     const float TORQUE_PERMITTED[N_MOTOR] = {
-        3.5, 3.5, 3.5, 3.5, 3.5, 3.5, 3.5, 3.5, 3.5
+        5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0
     };
 
     const float TORQUE_OFFSET[N_MOTOR] = {
@@ -283,7 +349,7 @@ private:
     // const uint8_t ID_MIDDLE[3] = {7, 8, 9};
     // const uint8_t ID_PROXIMAL[3] = {1, 2, 3};
 
-    // 1 / PULLEY_RADIUS * Step per rev / (2 * _PI) per rev,
+    // Step per rev / (2 * _PI * PULLEY_RADIUS) per rev,
     // e.g. 2,400,000 / (2 * _PI * 42) = 200,000 / (7 * _PI),
     // where 2,400,000 = 1,000 * 30 * 80, PULLEY_RADIUS = 42 mm.
     // Minus sign: positive dist means positive cable length change.
@@ -294,11 +360,27 @@ private:
     };
 
     // Velocities. Unit: Hz.
-    const float VEL[N_MOTOR] = {
+    const float VEL1[N_MOTOR] = {
         12000, 12000, 12000,
          4000,  4000,  4000,
          4000,  4000,  4000
     };
+    const float VEL2[N_MOTOR] = {
+        9000, 9000, 9000,
+        3000, 3000, 3000,
+        3000, 3000, 3000
+    };
+    const float VEL3[N_MOTOR] = {
+        6000, 6000, 6000,
+        2000, 2000, 2000,
+        2000, 2000, 2000
+    };
+    const float VEL4[N_MOTOR] = {
+        3000, 3000, 3000,
+        1000, 1000, 1000,
+        1000, 1000, 1000
+    };
+    const float* VEL = VEL1;
     
     // Accelerations. Unit: Hz/s.
     const uint32_t ACC_START[N_MOTOR] = {
