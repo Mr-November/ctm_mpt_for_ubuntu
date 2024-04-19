@@ -314,10 +314,34 @@ void CtmMpt::mtrSetPosAbs(const uint8_t id,
 
 	return;
 }
+// void CtmMpt::mtrSetPosAbs(const uint8_t id,
+// 							const int32_t pos, const int32_t vel,
+// 							const uint32_t k_i, const uint32_t k_f)
+// {
+// 	uint8_t cmd_pos_paras[] = { 0x00, 0x10, 0x00, 0x58, 0x00, 0x10, 0x20,
+// 								0x00, 0x00, 0x00, 0x00, // Operation data number=0.
+// 								0x00, 0x00, 0x00, 0x01, // Absolute positioning.
+// 								0x00, 0x00, 0x00, 0x00, // Index 15-18, position.
+// 								0x00, 0x00, 0x00, 0x00, // Index 19-22, operating speed.
+// 								0x00, 0x00, 0x00, 0x00, // Index 23-26, starting speed rate.
+// 								0x00, 0x00, 0x00, 0x00, // Index 27-30, stopping deceleration.
+// 								0x00, 0x00, 0x03, 0xe8, // Operating current=100.0%.
+// 								0x00, 0x00, 0x00, 0x01 }; // Trigger=1: All data updated.
+
+// 	cmd_pos_paras[0] = id;
+// 	utils::loadInt32ToUint8Array(&pos, cmd_pos_paras + 15);
+// 	utils::loadInt32ToUint8Array(&vel, cmd_pos_paras + 19);
+// 	utils::loadUint32ToUint8Array(&k_i, cmd_pos_paras + 23);
+// 	utils::loadUint32ToUint8Array(&k_f, cmd_pos_paras + 27);
+
+// 	this->mtrWrite_(cmd_pos_paras, 39);
+
+// 	return;
+// }
 
 void CtmMpt::mtrSetPosRel(const uint8_t id,
-							const int32_t pos, const int32_t vel,
-							const uint32_t k_i, const uint32_t k_f)
+						  const int32_t pos, const int32_t vel,
+						  const uint32_t k_i, const uint32_t k_f)
 {
 	uint8_t cmd_pos_paras[] = { 0x00, 0x10, 0x18, 0x00, 0x00, 0x0a, 0x14,
 								0x00, 0x00, 0x00, 0x02, // Incremental positioning (based on command position).
@@ -343,6 +367,30 @@ void CtmMpt::mtrSetPosRel(const uint8_t id,
 
 	return;
 }
+// void CtmMpt::mtrSetPosRel(const uint8_t id,
+// 						  const int32_t pos, const int32_t vel,
+// 						  const uint32_t k_i, const uint32_t k_f)
+// {
+// 	uint8_t cmd_pos_paras[] = { 0x00, 0x10, 0x00, 0x58, 0x00, 0x10, 0x20,
+// 								0x00, 0x00, 0x00, 0x00, // Operation data number=0.
+// 								0x00, 0x00, 0x00, 0x02, // Incremental positioning (based on command position).
+// 								0x00, 0x00, 0x00, 0x00, // Index 15-18, position.
+// 								0x00, 0x00, 0x00, 0x00, // Index 19-22, operating speed.
+// 								0x00, 0x00, 0x00, 0x00, // Index 23-26, starting speed rate.
+// 								0x00, 0x00, 0x00, 0x00, // Index 27-30, stopping deceleration.
+// 								0x00, 0x00, 0x03, 0xe8, // Operating current=100.0%.
+// 								0x00, 0x00, 0x00, 0x01 }; // Trigger=1: All data updated.
+
+// 	cmd_pos_paras[0] = id;
+// 	utils::loadInt32ToUint8Array(&pos, cmd_pos_paras + 15);
+// 	utils::loadInt32ToUint8Array(&vel, cmd_pos_paras + 19);
+// 	utils::loadUint32ToUint8Array(&k_i, cmd_pos_paras + 23);
+// 	utils::loadUint32ToUint8Array(&k_f, cmd_pos_paras + 27);
+
+// 	this->mtrWrite_(cmd_pos_paras, 39);
+
+// 	return;
+// }
 
 void CtmMpt::mtrSetVel(const uint8_t id,
 						const int32_t vel,
@@ -355,37 +403,42 @@ void CtmMpt::mtrSetVel(const uint8_t id,
 								0x00, 0x00, 0x00, 0x00, // Index 19-22, starting rate.
 								0x00, 0x00, 0x00, 0x00 }; // Index 23-26, stopping deceleration.
 	uint8_t cmd_vel_fw_on[] = { 0x00, 0x06, 0x00, 0x7d, 0x40, 0x00 };
-	uint8_t cmd_vel_rv_on[] = { 0x00, 0x06, 0x00, 0x7d, 0x80, 0x00 };
-	uint32_t vel_abs = 0;
 
-	// It is dangerous. Do not forget to stop.
-	if (vel >= 0)
-	{
-		vel_abs = vel;
-		cmd_vel_paras[0] = id;
-		cmd_vel_fw_on[0] = id;
-		utils::loadUint32ToUint8Array(&vel_abs, cmd_vel_paras + 15);
-		utils::loadUint32ToUint8Array(&k_i, cmd_vel_paras + 19);
-		utils::loadUint32ToUint8Array(&k_f, cmd_vel_paras + 23);
+	cmd_vel_paras[0] = id;
+	cmd_vel_fw_on[0] = id;
+	utils::loadInt32ToUint8Array(&vel, cmd_vel_paras + 15);
+	utils::loadUint32ToUint8Array(&k_i, cmd_vel_paras + 19);
+	utils::loadUint32ToUint8Array(&k_f, cmd_vel_paras + 23);
 
-		this->mtrWrite_(cmd_vel_paras, 27);
-		this->mtrWrite_(cmd_vel_fw_on, 6);
-	}
-	else
-	{
-		vel_abs = -vel;
-		cmd_vel_paras[0] = id;
-		cmd_vel_rv_on[0] = id;
-		utils::loadUint32ToUint8Array(&vel_abs, cmd_vel_paras + 15);
-		utils::loadUint32ToUint8Array(&k_i, cmd_vel_paras + 19);
-		utils::loadUint32ToUint8Array(&k_f, cmd_vel_paras + 23);
-
-		this->mtrWrite_(cmd_vel_paras, 27);
-		this->mtrWrite_(cmd_vel_rv_on, 6);
-	}
+	this->mtrWrite_(cmd_vel_paras, 27);
+	this->mtrWrite_(cmd_vel_fw_on, 6);
 
 	return;
 }
+// void CtmMpt::mtrSetVel(const uint8_t id,
+// 					   const int32_t vel,
+// 					   const uint32_t k_i, const uint32_t k_f)
+// {
+// 	uint8_t cmd_vel_paras[] = { 0x00, 0x10, 0x00, 0x58, 0x00, 0x10, 0x20,
+// 								0x00, 0x00, 0x00, 0x00, // Operation data number=0.
+// 								0x00, 0x00, 0x00, 0x10, // Continuous (speed control).
+// 								0x00, 0x00, 0x00, 0x00, // Do not change.
+// 								0x00, 0x00, 0x00, 0x00, // Index 19-22, operating speed.
+// 								0x00, 0x00, 0x00, 0x00, // Index 23-26, starting speed rate.
+// 								0x00, 0x00, 0x00, 0x00, // Index 27-30, stopping deceleration.
+// 								0x00, 0x00, 0x03, 0xe8, // Operating current=100.0%.
+// 								0x00, 0x00, 0x00, 0x01 }; // Trigger=1: All data updated.
+
+// 	// It is dangerous. Do not forget to write 0 speed thereafter.
+// 	cmd_vel_paras[0] = id;
+// 	utils::loadInt32ToUint8Array(&vel, cmd_vel_paras + 19);
+// 	utils::loadUint32ToUint8Array(&k_i, cmd_vel_paras + 23);
+// 	utils::loadUint32ToUint8Array(&k_f, cmd_vel_paras + 27);
+
+// 	this->mtrWrite_(cmd_vel_paras, 39);
+
+// 	return;
+// }
 
 void CtmMpt::mtrGetPos(const uint8_t id, int32_t *const pos)
 {
@@ -655,15 +708,28 @@ void CtmMpt::mtrWrite_(const uint8_t *const cmd, const size_t len)
 
 	// Write to motors.
 	bytes_wrote = this->mtr_serial_.write(new_cmd, len + 2);
-    // ros::Time tt = ros::Time::now();
+
+	// ros::Time tt = ros::Time::now();
 	if (new_cmd[1] != 0x03)
 	{
 		while (this->mtr_serial_.available() != 8);
-		// bytes_read = this->mtr_serial_.read(rsp, 8);
 		this->mtr_serial_.flushInput();
+		
 	}
-	// std::cout << "motor write ------------------------------- "
-    //     << (ros::Time::now()-tt).toSec() << " sec" << std::endl;
+	// std::cout << "[" << ros::Time::now() << "] Motor write waiting: "
+    //     	  << (ros::Time::now()-tt).toSec()*1000 << " ms." << std::endl;
+
+	// if (new_cmd[1] != 0x03)
+	// {
+	// 	// while (this->mtr_serial_.available() != 8)
+	// 	// {
+	// 		// std::cout << "[" << ros::Time::now() << "] i am here."<< std::endl;
+	// 		// ros::Duration(0.01).sleep();
+	// 	// }
+	// 	// this->mtr_serial_.flushInput();
+	// 	ros::Duration(0.02).sleep();
+	// 	bytes_read = this->mtr_serial_.read(rsp, 8);
+	// }
 
 	// Delete the new array.
 	delete[] new_cmd;

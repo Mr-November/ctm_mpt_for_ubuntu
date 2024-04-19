@@ -31,6 +31,8 @@ int main(int argc, char** argv)
     // Go to the first point.
     ros::spinOnce();
     m.trackX();
+    // std::cout << "Here." << std::endl;
+    // std::getchar();
     m.trackPFB(true);
     m.trackPFB(true);
     m.trackPFB(true);
@@ -55,6 +57,7 @@ int main(int argc, char** argv)
             ROS_WARN("The motor controller did not meet the desired rate.");
         }
     }
+    ROS_INFO("Motor controller ended.");
 
     return 0;
 }

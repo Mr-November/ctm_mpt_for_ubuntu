@@ -24,16 +24,21 @@ int main(int argc, char** argv)
     CtmMpt2 m("/dev/ttyUSB1", "/dev/ttyUSB2", "/dev/ttyUSB0",        &nh);
     // *************************************************
 
-    // m.print();
+    m.init();
+    m.print();
     // m.zero();
     // m.print();
     // m.init();
     // m.reset();
-    m.relax(10);
+    m.move(10, true);
+    m.print();
     ros::Duration(5).sleep();
     std::cout << "Start?";
     std::getchar();
-
+    
+    ros::Rate loop_rate(5);
+    ros::Time time_start = ros::Time::now();
+    float time_cur = 0.0;
     while(ros::ok())
     {
         float dist;
@@ -43,9 +48,39 @@ int main(int argc, char** argv)
         std::cin >> id;
         std::cout << "Distance: ";
         std::cin >> dist;
-        m.move(id, dist, true);
+
+        time_start = ros::Time::now();
+        m.move(id, dist, false);
+        // m.run(id, dist);
+        time_cur = (ros::Time::now()-time_start).toSec();
         ROS_INFO("Motor %d travels %.2f mm.\n", (int)id, dist);
-        m.printPose();
+        ROS_INFO("Execution time of writing motors %.4f ms.\n", time_cur*1000);
+
+        // ros::Duration(3.0).sleep();
+        // m.stop();
+        // m.run(id, 0.0);
+
+        time_start = ros::Time::now();
+        m.print();
+        time_cur = (ros::Time::now()-time_start).toSec();
+        ROS_INFO("Execution time of print status %.4f ms.\n", time_cur*1000);
+
+        // time_start = ros::Time::now();
+        // m.printPose();
+        // time_cur = (ros::Time::now()-time_start).toSec();
+        // ROS_INFO("Execution time of print pose %.4f ms.\n", time_cur*1000);
+
+        // time_start = ros::Time::now();
+        // m.readTorque();
+        // time_cur = (ros::Time::now()-time_start).toSec();
+        // ROS_INFO("Execution time reading torque %.4f ms.\n", time_cur*1000);
+
+        // // When setting the initial pose, uncomment this block.
+        // ros::spinOnce();
+        // if(!loop_rate.sleep())
+        // {
+        //     ROS_WARN("The terminal did not meet the desired rate.");
+        // }
     }
 
     return 0;

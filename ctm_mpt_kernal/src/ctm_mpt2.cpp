@@ -32,6 +32,18 @@ CtmMpt2::CtmMpt2(const std::string& mtr_port,
                ros::NodeHandle* nh)
 : CtmMpt::CtmMpt(mtr_port)
 {
+    // Define the time format.
+    static const Eigen::IOFormat fmt(
+        Eigen::FullPrecision,
+        Eigen::DontAlignCols,
+        ",", // coeffSeparator
+        ",", // rowSeparator
+        "", // rowPrefix
+        "", // rowSuffix
+        "", // matPrefix
+        "," // matSuffix
+    );
+
     // Initialise the publisher.
     this->torque_publisher = nh->advertise<std_msgs::Float32MultiArray>("torque", 1);
     std_msgs::MultiArrayDimension dim;
@@ -62,7 +74,11 @@ CtmMpt2::CtmMpt2(const std::string& mtr_port,
     auto now = std::chrono::system_clock::now();
     std::time_t tt = std::chrono::system_clock::to_time_t(now);
     std::string tstr = ctime(&tt);
-    this->file_log << "[ " << tstr.substr(0, tstr.length()-1) << " ]" << std::endl;
+    this->file_log << "[ "
+                   << Eigen::Matrix<double, 1, 1>(ros::Time::now().toSec()).format(fmt)
+                   << " "
+                   << tstr.substr(0, tstr.length()-1)
+                   << " ]" << std::endl;
 
     return;
 }
@@ -73,6 +89,18 @@ CtmMpt2::CtmMpt2(const std::string& snsr_port_1,
                ros::NodeHandle* nh)
 : CtmMpt::CtmMpt(snsr_port_1, snsr_port_2, mtr_port)
 {
+    // Define the time format.
+    static const Eigen::IOFormat fmt(
+        Eigen::FullPrecision,
+        Eigen::DontAlignCols,
+        ",", // coeffSeparator
+        ",", // rowSeparator
+        "", // rowPrefix
+        "", // rowSuffix
+        "", // matPrefix
+        "," // matSuffix
+    );
+
     // Initialise the publisher.
     this->torque_publisher = nh->advertise<std_msgs::Float32MultiArray>("torque", 1);
     std_msgs::MultiArrayDimension dim;
@@ -103,7 +131,11 @@ CtmMpt2::CtmMpt2(const std::string& snsr_port_1,
     auto now = std::chrono::system_clock::now();
     std::time_t tt = std::chrono::system_clock::to_time_t(now);
     std::string tstr = ctime(&tt);
-    this->file_log << "[ " << tstr.substr(0, tstr.length()-1) << " ]" << std::endl;
+    this->file_log << "[ "
+                   << Eigen::Matrix<double, 1, 1>(ros::Time::now().toSec()).format(fmt)
+                   << " "
+                   << tstr.substr(0, tstr.length()-1)
+                   << " ]" << std::endl;
 
     return;
 }
@@ -337,6 +369,18 @@ void CtmMpt2::move(const float *const dist, bool wait)
     return;
 }
 
+void CtmMpt2::move(const float dist, bool wait)
+{
+    float ds[N_MOTOR] = {0.0};
+    for (size_t i = 0; i < N_MOTOR; i++)
+    {
+        ds[i] = dist;
+    }
+    move(ds, wait);
+
+    return;
+}
+
 void CtmMpt2::run(const uint8_t id, const float dist_dot)
 {
     this->mtrSetVel(id, dist_dot * this->RESOLUTION[id-1],
@@ -374,14 +418,14 @@ void CtmMpt2::run(const float *const dist_dot)
     return;
 }
 
-void CtmMpt2::relax(const float dist)
+void CtmMpt2::run(const float dist_dot)
 {
     float ds[N_MOTOR] = {0.0};
     for (size_t i = 0; i < N_MOTOR; i++)
     {
-        ds[i] = dist;
+        ds[i] = dist_dot;
     }
-    move(ds, true);
+    run(ds);
 
     return;
 }
@@ -451,7 +495,9 @@ void CtmMpt2::tfCallback(const geometry_msgs::PoseStamped& tfmsg)
     // Calculate the pose in real world.
     // Unit of translation: mm
     this->Tb = this->invT_zero * q2T(quat, 1000*orig);
-    // this->writeLog(this->Tb);
+
+    // // When setting the initial pose, uncomment this block.
+    // this->saveData(ros::Time::now().toSec());
     // std::cout << "Tb = " << this->Tb << std::endl;
 	
     return;

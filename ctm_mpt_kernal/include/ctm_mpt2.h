@@ -167,17 +167,17 @@ public:
     void init(void); // Initialise motors and sensors.
     void reset(void); // Return to zero positions.
     void zero(void); // Adjust zero.
+    
     void move(const float *const dist, bool wait); // Relative linear distances. Unit: mm.
-    void move(const uint8_t id, const float dist, bool wait); // Move a single motor.
+    void move(const uint8_t id, const float dist, bool wait); // Move one single motor.
+    void move(const float dist, bool wait); // Move all motors.
+    
     // Function run() is dangerous.
-    // Must call it together with snooze() and stop().
+    // Must call it together with stop().
     // Current maximum value: 1.31947 mm/s.
     void run(const float *const dist_dot); // Relative linear velocity. Unit: mm/s.
-    void run(const uint8_t id, const float dist_dot); // Run a single motor.
-    void relax(const float dist = 10); // Set positive cable length to reduce the tension.
-    // Do something else while snoozing, like publishing sensor data.
-    // Unit: second.
-    // void snooze(const float tttt);
+    void run(const uint8_t id, const float dist_dot); // Run one single motor.
+    void run(const float dist_dot); // Run all motors.
 
     // void setTargetTorque(const Eigen::Matrix<float, N_CABLE, 1>& Tau);
     // void setTargetTorque(const float Tau);
@@ -257,7 +257,7 @@ private:
     // Body transformation.
     Eigen::Matrix4f Tb = Eigen::Matrix4f::Identity();
     // Weight matrix, for optimisation.
-    const Eigen::DiagonalMatrix<float, N_DIM> W {10.0, 10.0, 10.0, 1.0, 1.0, 1.0};
+    const Eigen::DiagonalMatrix<float, N_DIM> W {5.0, 5.0, 5.0, 1.0, 1.0, 1.0};
 
     // Log files and write log function.
     std::ofstream file_log;
@@ -277,11 +277,11 @@ private:
     // const size_t NILC = 10;
 
     // Initial transformation.
-    Eigen::Matrix4f invT_zero //= Eigen::Matrix4f::Identity();
+    Eigen::Matrix4f invT_zero// = Eigen::Matrix4f::Identity();
     {
-        {-0.892959269501999,-0.0017208783670654,0.450134181759287,21.3082667037461},
-        {0.450136688146614,-0.0015485003565991,0.892958321609158,-253.278177506032},
-        {-0.000839639717376681,0.999997320358555,0.00215737823610617,-12.6148643825625},
+        {-0.788518493849104,0.00667700049848926,0.614974798282242,18.0859611459860},
+        {0.614634702929870,-0.0264207142728195,0.788369283909276,-247.861697538404},
+        {0.0215120155320558,0.999628612796601,0.0167293056069698,-18.3613437642188},
         {0,0,0,1}
     };
 
@@ -331,7 +331,7 @@ private:
     std_msgs::Float32MultiArray torque_message;
 
     const float TORQUE_PERMITTED[N_MOTOR] = {
-        5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0
+        5.5, 5.5, 5.5, 5.5, 5.5, 5.5, 5.5, 5.5, 5.5
     };
 
     const float TORQUE_OFFSET[N_MOTOR] = {
@@ -361,10 +361,15 @@ private:
 
     // Velocities. Unit: Hz.
     const float VEL1[N_MOTOR] = {
-        12000, 12000, 12000,
-         4000,  4000,  4000,
-         4000,  4000,  4000
+        30000, 30000, 30000,
+        10000, 10000, 10000,
+        10000, 10000, 10000
     };
+    // const float VEL1[N_MOTOR] = {
+    //     12000, 12000, 12000,
+    //      4000,  4000,  4000,
+    //      4000,  4000,  4000
+    // };
     const float VEL2[N_MOTOR] = {
         9000, 9000, 9000,
         3000, 3000, 3000,
@@ -384,16 +389,29 @@ private:
     
     // Accelerations. Unit: Hz/s.
     const uint32_t ACC_START[N_MOTOR] = {
-        1800000, 1800000, 1800000,
-         600000,  600000,  600000,
-         600000,  600000,  600000
+        300000, 300000, 300000,
+        100000, 100000, 100000,
+        100000, 100000, 100000
     };
 
     const uint32_t ACC_BRAKE[N_MOTOR] = {
-        1800000, 1800000, 1800000,
-         600000,  600000,  600000,
-         600000,  600000,  600000
+        300000, 300000, 300000,
+        100000, 100000, 100000,
+        100000, 100000, 100000
     };
+    
+    
+    // const uint32_t ACC_START[N_MOTOR] = {
+    //     360000, 360000, 360000,
+    //     120000, 120000, 120000,
+    //     120000, 120000, 120000
+    // };
+
+    // const uint32_t ACC_BRAKE[N_MOTOR] = {
+    //     360000, 360000, 360000,
+    //     120000, 120000, 120000,
+    //     120000, 120000, 120000
+    // };
 };
 
 #endif

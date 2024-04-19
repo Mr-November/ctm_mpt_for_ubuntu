@@ -40,12 +40,9 @@ public:
 
 	// Set motor position.
 	// Not recommended. Because wrap setting is enabled, with \pm 900 rev.
-	// If wait = true, stay until arrived.
-	// If wait = false, exit directly.
 	void mtrSetPosAbs(const uint8_t id,
 					  const int32_t pos, const int32_t vel = 1000,
 					  const uint32_t k_i = 1000000, const uint32_t k_f = 1000000);
-
 	void mtrSetPosRel(const uint8_t id,
 					  const int32_t pos, const int32_t vel = 1000,
 					  const uint32_t k_i = 1000000, const uint32_t k_f = 1000000);
@@ -75,11 +72,8 @@ public:
 
 	// Sensor.
 	void snsrInit(void);
-
 	void snsrRead(float *const dst = NULL);
-
 	void snsrGetCfg(void);
-
 	void snsrGetMat(void);
 
 private:
