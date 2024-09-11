@@ -85,6 +85,62 @@ CtmMpt2::CtmMpt2(const std::string& mtr_port,
 
 CtmMpt2::CtmMpt2(const std::string& snsr_port_1,
 			   const std::string& snsr_port_2,
+               ros::NodeHandle* nh)
+: CtmMpt::CtmMpt(snsr_port_1, snsr_port_2)
+{
+    // Define the time format.
+    static const Eigen::IOFormat fmt(
+        Eigen::FullPrecision,
+        Eigen::DontAlignCols,
+        ",", // coeffSeparator
+        ",", // rowSeparator
+        "", // rowPrefix
+        "", // rowSuffix
+        "", // matPrefix
+        "," // matSuffix
+    );
+
+    // Initialise the publisher.
+    this->torque_publisher = nh->advertise<std_msgs::Float32MultiArray>("torque", 1);
+    std_msgs::MultiArrayDimension dim;
+    dim.label = "tau";
+    dim.size = N_MOTOR;
+    dim.stride = N_MOTOR;
+    this->torque_message.layout.dim.push_back(dim);
+    this->torque_message.layout.data_offset = 0;
+    this->torque_message.data = std::vector<float>(N_MOTOR, 0.0);
+
+    // Initialise the subscribers.
+    this->tf_subscriber = nh->subscribe(
+        "/ctm_mpt/vrpn_client_node/RobotTip/pose", 1, &CtmMpt2::tfCallback, this
+    );
+    this->xi_subscriber = nh->subscribe("/ctm_mpt/xid", 1, &CtmMpt2::xiCallback, this);
+    
+    // Initialise the maximum cable velocity.
+    this->L_DOT_MAX = ((Eigen::Map<const Eigen::Matrix<float, N_MOTOR, 1>> (this->VEL)).array() / (Eigen::Map<const Eigen::Matrix<float, N_MOTOR, 1>> (this->RESOLUTION)).array()).abs();
+
+    // Initialise the logger.
+    this->file_log.open(
+        "/home/ellipse/Desktop/catkin_ws/src/ctm_mpt/ctm_mpt_kernal/log/log0001.csv",
+        std::ios_base::app);
+    if (!this->file_log.is_open())
+    {
+        ROS_ERROR_STREAM("Unable to open the log file.");
+    }
+    auto now = std::chrono::system_clock::now();
+    std::time_t tt = std::chrono::system_clock::to_time_t(now);
+    std::string tstr = ctime(&tt);
+    this->file_log << "[ "
+                   << Eigen::Matrix<double, 1, 1>(ros::Time::now().toSec()).format(fmt)
+                   << " "
+                   << tstr.substr(0, tstr.length()-1)
+                   << " ]" << std::endl;
+
+    return;
+}
+
+CtmMpt2::CtmMpt2(const std::string& snsr_port_1,
+			   const std::string& snsr_port_2,
 			   const std::string& mtr_port,
                ros::NodeHandle* nh)
 : CtmMpt::CtmMpt(snsr_port_1, snsr_port_2, mtr_port)
@@ -511,7 +567,7 @@ void CtmMpt2::xiCallback(const std_msgs::Float32MultiArray& xi_msg_array)
     this->xi_diff_fw = xi_msg.block(N_DIM*2,0,N_DIM,1);
     this->Td = this->fk3cc(this->L1, this->L2, this->L3, xid);
 
-    // float vel_mode = xi_msg(N_DIM*3);
+    float vel_mode = xi_msg(N_DIM*3);
     // if (vel_mode < 1.2)
     // {
     //     this->VEL = this->VEL1;
@@ -528,7 +584,7 @@ void CtmMpt2::xiCallback(const std_msgs::Float32MultiArray& xi_msg_array)
     // {
     //     this->VEL = this->VEL4;
     // }
-    // this->L_DOT_MAX = ((Eigen::Map<const Eigen::Matrix<float, N_MOTOR, 1>> (this->VEL)).array() / (Eigen::Map<const Eigen::Matrix<float, N_MOTOR, 1>> (this->RESOLUTION)).array()).abs();
+    this->L_DOT_MAX = ((Eigen::Map<const Eigen::Matrix<float, N_MOTOR, 1>> (this->VEL)).array() / (Eigen::Map<const Eigen::Matrix<float, N_MOTOR, 1>> (this->RESOLUTION)).array()).abs();
 
     std::cout << "Callback ----------------------" << std::endl
         << "xid = " << this->xid.transpose() << std::endl
